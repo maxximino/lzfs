@@ -609,6 +609,44 @@ int lzfs_vnop_fsync(struct file *filep, struct dentry *dentry, int datasync)
 	return err;
 }
 
+/* XXX --> Internal function used by lzfs_vnop_readlink and lzfs_readpage
+ *
+ * Performs the read operation
+ *
+ * Explanation of parameters
+ * 		buf        = buffer pointer to data
+ * 		len        = length of the data
+ * 		pos        = offest within file to wite
+ * 		segment    = indicates whether buf pointer points to 
+ * 		             user space buffer or kernel buffer.
+ * */
+static inline ssize_t lzfs_read(vnode_t *vp, const char *buf, ssize_t len, 
+		loff_t pos, uio_seg_t segment)
+{
+	int          err;
+	
+	struct iovec iov = {
+		.iov_base = (void *) buf,
+		.iov_len  = len,
+	};
+
+	uio_t uio = {
+		.uio_iov      = &iov,
+		.uio_iovcnt   = 1,
+		.uio_loffset  = (offset_t) pos,
+		.uio_resid    = len,
+		.uio_segflg   = segment,
+	};
+
+	const cred_t *cred = get_current_cred();
+
+	err = zfs_read(vp, &uio, 0, (cred_t *) cred, NULL);
+	put_cred(cred);
+	if (unlikely(err))
+		return -err;
+	return (len - uio.uio_resid);
+}
+
 int copy_data(read_descriptor_t *desc, struct page *page, 
 		unsigned long offset, unsigned long size)
 {
@@ -636,11 +674,7 @@ int copy_data(read_descriptor_t *desc, struct page *page,
 ssize_t
 lzfs_vnop_read (struct file *filep, char __user *buf, size_t len, loff_t *ppos)
 {
-	struct iovec iov = { .iov_base = buf, .iov_len = len };
-	int err;
-	const cred_t *cred = get_current_cred();
 	vnode_t *vp = NULL;
-	uio_t uio;
 	loff_t isize;
 	ssize_t size;
 
@@ -655,14 +689,24 @@ lzfs_vnop_read (struct file *filep, char __user *buf, size_t len, loff_t *ppos)
 	unsigned int prev_offset;
 	read_descriptor_t desc;
 
+	ENTRY;
 	vp  = LZFS_ITOV(inode);
+
+	if (likely(!(vp->v_flag & VMMAPPED))) {
+		/* file is not memory mmapped, pass read directly to ZFS */
+		ssize_t rc;
+		rc = lzfs_read(vp, buf, len, *ppos, UIO_USERSPACE);
+		if (likely(rc > 0))
+			*ppos += rc;
+		tsd_exit();
+		EXIT;
+		return rc;
+	}
 
 	desc.written = 0;
 	desc.arg.buf = buf;
 	desc.count   = len;
 	desc.error   = 0;
-
-	ENTRY;
 
 	index = *ppos >> PAGE_CACHE_SHIFT;
 	prev_index = ra->prev_pos >> PAGE_CACHE_SHIFT;
@@ -768,22 +812,13 @@ no_cached_page:
 		if (offset + size > isize)
 			size = isize - desc.written;
 
-
-		iov.iov_base = desc.arg.buf;
-		iov.iov_len  = size;
-
-		uio.uio_iov     = &iov;
-		uio.uio_iovcnt  = 1;
-		uio.uio_loffset = (offset_t) *ppos;
-		uio.uio_resid   = size;
-		uio.uio_segflg  = UIO_USERSPACE;
-		err = zfs_read(vp, &uio, 0,(cred_t *) cred, NULL);
-		if (unlikely(err)) {
-			err = -err;
-			goto out_error;
+		ret = lzfs_read(vp, desc.arg.buf, size, *ppos, UIO_USERSPACE);
+		if (unlikely(ret < 0)) {
+			tsd_exit();
+			EXIT;
+			return ret;
 		}
 
-		ret = size - uio.uio_resid;
 		desc.count    = desc.count - ret;
 		desc.written += ret;
 		desc.arg.buf += ret;
@@ -805,17 +840,10 @@ no_cached_page:
 
 out:
 //	*ppos = ((loff_t)index << PAGE_CACHE_SHIFT) + offset;
-
 	zfs_file_accessed(vp);
-	put_cred(cred);
 	tsd_exit();
 	EXIT;
 	return ((ssize_t) (desc.written));
-out_error:
-	put_cred(cred);
-	tsd_exit();
-	EXIT;
-	return err;
 }
 
 /* XXX --> Internal function used by lzfs_vnop_write and lzfs_writepage 
@@ -830,27 +858,32 @@ out_error:
  * 		segment    = indicates whether buf pointer points to 
  * 		             user space buffer or kernel buffer.
  * */
-ssize_t lzfs_write(vnode_t *vp, unsigned int file_flags, 
+static inline ssize_t lzfs_write(vnode_t *vp, unsigned int file_flags, 
 		const char *buf, ssize_t len, loff_t pos, uio_seg_t segment)
 {
-	uio_t uio;
+	int          err;
+
+	struct iovec iov = {
+		.iov_base = (void *) buf,
+		.iov_len  = len,
+	};
+
+	uio_t uio = {
+		.uio_iov     = &iov,
+		.uio_resid   = len,
+		.uio_iovcnt  = 1,
+		.uio_loffset = (offset_t)(pos),
+		.uio_limit   = MAXOFFSET_T,
+		.uio_segflg  = segment,
+	};
+
 	const cred_t *cred = get_current_cred();
-	struct iovec iov;
-	int err;
-
-	iov.iov_base = (void *) buf;
-	iov.iov_len  = len;
-
-	uio.uio_iov     = &iov;
-	uio.uio_resid   = len;
-	uio.uio_iovcnt  = 1;
-	uio.uio_loffset = (offset_t)(pos);
-	uio.uio_limit   = MAXOFFSET_T;
-	uio.uio_segflg  = segment;
 
 	err = zfs_write(vp, &uio, file_flags, (cred_t *)cred, NULL);
 	put_cred(cred);
-	return err;
+	if (unlikely(err))
+		return -err;
+	return (len - uio.uio_resid);
 }
 
 ssize_t
@@ -878,16 +911,15 @@ lzfs_vnop_write (struct file *filep, const char __user *buf, size_t len,
 
 	vp = LZFS_ITOV(inode);
 
-	if (!(vp->v_flag & VMMAPPED)) {
-		/* file is not memory mmapped, pass read directly to ZFS */
-		err = lzfs_write(vp, filep->f_flags, buf, len, *ppos, UIO_USERSPACE);
-		if (unlikely(err)) {
-			err = -err;
-			goto out_error;
-		}
-		*ppos += len;
-		written = len;
-		goto out_success;
+	if (likely(!(vp->v_flag & VMMAPPED))) {
+		/* file is not memory mmapped, pass write directly to ZFS */
+		ssize_t rc; 
+		rc = lzfs_write(vp, filep->f_flags, buf, len, *ppos, UIO_USERSPACE);
+		if (likely(rc > 0))
+			*ppos += rc;
+		tsd_exit();
+		EXIT;
+		return rc;
 	}
 
 	i_size = i_size_read(inode);
@@ -947,6 +979,7 @@ lzfs_vnop_write (struct file *filep, const char __user *buf, size_t len,
 
 		/* do i need to modify the inode size */
 		SetPageUptodate(page);
+		ClearPageError(page);
 //		set_page_dirty(page);
 		unlock_page(page);
 		page_cache_release(page);
@@ -968,21 +1001,20 @@ lzfs_vnop_write (struct file *filep, const char __user *buf, size_t len,
 		continue;
 
 no_cached_page:
-		err = lzfs_write(vp, filep->f_flags, user_buf, size, *ppos, UIO_USERSPACE);
-		if (unlikely(err)) {
-			err = -err;
+		size = lzfs_write(vp, filep->f_flags, user_buf, size, *ppos, UIO_USERSPACE);
+		if (unlikely(size < 0)) {
+			err = size;
 			goto out_error;
 		}
 
-		*ppos += size;
+		*ppos      += size;
 		pos_append += size;
-		user_buf += size;
-		written  += size;
-		index    =  *ppos >> PAGE_CACHE_SHIFT;
-		offset   =  0;
+		user_buf   += size;
+		written    += size;
+		index       = *ppos >> PAGE_CACHE_SHIFT;
+		offset      =  0;
 	}
 
-out_success:
 	tsd_exit();
 	EXIT;
 	return ((ssize_t) written);
@@ -1091,6 +1123,7 @@ static int lzfs_readpage(struct file *file, struct page *page)
     char *buf           = NULL;
     vnode_t *vp         = NULL;
     unsigned long fillsize = 0;
+	ssize_t rc;
     struct iovec iov;
     uio_t uio;
 
@@ -1106,7 +1139,8 @@ static int lzfs_readpage(struct file *file, struct page *page)
                 PAGE_CACHE_SHIFT)) {
         zero_user(page, 0, PAGE_CACHE_SIZE);
         printk(KERN_ERR "Read outside i_size - truncated?");
-        goto done;
+    	SetPageUptodate(page);
+        goto out;
     }
 
     if (NULL == (buf = kmap(page))) {
@@ -1121,18 +1155,8 @@ static int lzfs_readpage(struct file *file, struct page *page)
         i_size -= offset;
         fillsize = i_size > PAGE_CACHE_SIZE ? PAGE_CACHE_SIZE : i_size;
 
-        iov.iov_base    = buf;
-        iov.iov_len     = fillsize;
-
-        uio.uio_iov     = &iov;
-        uio.uio_iovcnt  = 1;
-        uio.uio_loffset = (offset_t)(offset);
-        uio.uio_resid   = fillsize;
-        uio.uio_segflg  = UIO_SYSSPACE;
-
-        err = zfs_read(vp, &uio, 0, (cred_t *) cred, NULL);
-        if (err) {
-            SetPageError(page);
+		rc = lzfs_read(vp, buf, fillsize, offset, UIO_SYSSPACE);
+        if (unlikely(rc < 0)) {
             fillsize = 0;
             err = -EIO;
         }
@@ -1141,14 +1165,17 @@ static int lzfs_readpage(struct file *file, struct page *page)
     if (fillsize < PAGE_CACHE_SIZE)
         memset(buf + fillsize, 0, PAGE_CACHE_SIZE - fillsize);
 
-    if (err == 0)
+    if (!err) {
         SetPageUptodate(page);
+		ClearPageError(page);
+    	flush_dcache_page(page);
+	} else {
+		ClearPageUptodate(page);
+        SetPageError(page);
+	}
 
-    flush_dcache_page(page);
     kunmap(page);
 
-done:
-    SetPageUptodate(page);
 out:
     unlock_page(page);
 //    printk(KERN_ERR "%s: <==\n", __FUNCTION__);
@@ -1203,13 +1230,16 @@ static int lzfs_writepage(struct page *page, struct writeback_control *wbc)
      * to the end of the file, but the we are in writepage and data 
      * should be written to same offset that we provide to zfs_write.
      * */
-	err = lzfs_write(vp, filep->f_flags & ~FAPPEND, buf, len, offset, UIO_SYSSPACE);
-    if (err) {
+	len = lzfs_write(vp, filep->f_flags & ~FAPPEND, buf, len, offset, UIO_SYSSPACE);
+    if (unlikely(len < 0)) {
+		ClearPageUptodate(page);
         SetPageError(page);
         err = -EIO;
-    }
+	} else {
+    	SetPageUptodate(page);
+		ClearPageError(page);
+	}
     kunmap(page);
-    SetPageUptodate(page);
 out:
     //	page_clear_dirty(page);
     unlock_page(page);
