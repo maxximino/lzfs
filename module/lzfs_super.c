@@ -330,8 +330,10 @@ lzfs_get_sb(struct file_system_type *fs_type,
 	else
 		vfsp->vfs_flag |= VFS_ATIME;
 
+	if(!vfsp->is_snap) {
 	if ((rc = zfs_register_callbacks(vfsp)))
 		lzfs_zfsctl_destroy(vfsp->vfs_super->s_fs_info);
+	}
 
 	EXIT;
 	return rc;
