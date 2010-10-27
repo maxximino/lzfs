@@ -2,9 +2,6 @@ dnl #
 dnl # LZFS_AC_META
 dnl # Read metadata from the META file.
 dnl #
-dnl # AUTHOR:
-dnl # Chris Dunlap <cdunlap@llnl.gov>
-dnl # Brian Behlendorf <behlendorf1@llnl.gov>
 dnl #
 AC_DEFUN([LZFS_AC_META], [
 	AC_MSG_CHECKING([metadata])

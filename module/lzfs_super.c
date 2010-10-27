@@ -36,11 +36,12 @@
 #include <asm/uaccess.h>
 #include <sys/vfs.h>
 #include <sys/vnode.h>
+#include <spl-debug.h>
 #include <sys/lzfs_inode.h>
 #include <sys/lzfs_snap.h>
-#include <sys/lzfs_exportfs.h>
 
 #include <sys/mntent.h>
+#include <spl_config.h>
 
 #ifdef DEBUG_SUBSYSTEM
 #undef DEBUG_SUBSYSTEM
@@ -68,7 +69,7 @@ lzfs_clear_vnode(struct inode *inode)
 {
 	vnode_t		*vp;
 
-	ENTRY;
+	SENTRY;
 	vp = LZFS_ITOV(inode);
 	
 	ASSERT(vp->v_count == 1);
@@ -89,16 +90,16 @@ lzfs_clear_vnode(struct inode *inode)
 			}
 	}
 	vp->v_data = NULL;
-	EXIT;
+	SEXIT;
 }
 
 static void
 lzfs_put_super(struct super_block *sb)
 {
-	ENTRY;
+	SENTRY;
 	zfs_umount(sb->s_fs_info, 0, NULL);
 	kfree(sb->s_fs_info);
-	EXIT;
+	SEXIT;
 }
 
 static struct inode *
@@ -106,13 +107,13 @@ lzfs_alloc_vnode(struct super_block *sb)
 {
 	vnode_t *vp = NULL;
 	
-	ENTRY;
+	SENTRY;
 	vp = vn_alloc(KM_SLEEP); 
 	bzero(vp, sizeof(vnode_t));
 	mutex_init(&vp->v_lock, NULL, MUTEX_DEFAULT, NULL);
 	inode_init_once(LZFS_VTOI(vp));
 	LZFS_VTOI(vp)->i_version = 1;
-	EXIT;
+	SEXIT;
 	return LZFS_VTOI(vp);
 }
 
@@ -140,7 +141,7 @@ static int lzfs_statfs(struct dentry *dentry, struct kstatfs *statfs)
 	BUG_ON(zfs_statvfs(vfsp, &stat));
 
 	statfs->f_type = vfsp->vfs_magic;
-    statfs->f_bsize = stat.f_frsize;
+    	statfs->f_bsize = stat.f_frsize;
 	statfs->f_blocks = stat.f_blocks;
 	statfs->f_bfree = stat.f_bfree;
 	statfs->f_bavail = stat.f_bavail;
@@ -221,7 +222,7 @@ lzfs_fill_super(struct super_block *sb, void *data, int silent)
 	struct dentry *root_dentry = NULL;
 	long ret = -EINVAL;
 	
-	ENTRY;
+	SENTRY;
 
 	vfsp = (vfs_t *) kzalloc(sizeof(vfs_t), KM_SLEEP);
 	vfsp->vfs_set_inode_ops = lzfs_set_inode_ops;
@@ -230,7 +231,7 @@ lzfs_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_op	  =	&lzfs_ops;
 	sb->s_time_gran	  =	1;
 	sb->s_flags	  =	MS_ACTIVE;
-	sb->s_export_op	  =     &zfs_export_ops;
+//	sb->s_export_op	  =     &zfs_export_ops;
 	error = zfs_domount(vfsp, data);
 	if (error) {
 		printk(KERN_WARNING "mount failed to open the pool!!\n");
@@ -245,35 +246,36 @@ lzfs_fill_super(struct super_block *sb, void *data, int silent)
 	} else {
 		vfsp->is_snap = 1;
 	}
-
+	
 	sb->s_blocksize   =	vfsp->vfs_bsize;
 	sb->s_blocksize_bits = ilog2(vfsp->vfs_bsize);
 	sb->s_time_gran = 1;
-
 
 	zfs_root(sb->s_fs_info, &root_vnode); 
 	if (!root_vnode) {
 		printk(KERN_WARNING "root inode failed to allocate");
 		goto mount_failed;
 	}
-	root_inode = &root_vnode->v_inode; 
+//	root_inode = &root_vnode->v_inode; 
+	root_inode = LZFS_VTOI(root_vnode);
 	root_dentry = d_alloc_root(root_inode);
 	if (!root_dentry) {
-		printk(KERN_WARNING "chk4: %s\n", __FUNCTION__);
+		printk(KERN_WARNING "chkneep4: %s\n", __FUNCTION__);
 		goto mount_failed;
 	}
 
 	sb->s_root = root_dentry;
+
 	if (!strchr((char *) data, '@')) {
 		lzfs_zfsctl_create(vfsp);
 	}
-	EXIT;
+	SEXIT;
 	return 0;
 
 mount_failed:
 	sb->s_fs_info = NULL;
 	kfree(vfsp);
-	EXIT;
+	SEXIT;
 	return (ret);
 }
 
@@ -291,16 +293,16 @@ lzfs_get_sb(struct file_system_type *fs_type,
 	 * There is no need for a block device for this file system.
 	 * Let's call get_sb_nodev.
 	 */
-	ENTRY;
+	SENTRY;
 	rc = get_sb_nodev(fs_type, flags, (void *)dev_name, 
 			    lzfs_fill_super, mnt);
 
-	if (rc)
+	if (rc) 
 		return rc;
-
+	
 	vfsp = lzfs_super(mnt->mnt_sb);
 	vfsp->vfsmnt = mnt;
-
+	
 	/* copy the mount flags information (from Linux Kernel) to 
 	 * zfs file system 
 	 * */
@@ -331,11 +333,10 @@ lzfs_get_sb(struct file_system_type *fs_type,
 		vfsp->vfs_flag |= VFS_ATIME;
 
 	if(!vfsp->is_snap) {
-	if ((rc = zfs_register_callbacks(vfsp)))
-		lzfs_zfsctl_destroy(vfsp->vfs_super->s_fs_info);
+		if ((rc = zfs_register_callbacks(vfsp)))
+			lzfs_zfsctl_destroy(vfsp->vfs_super->s_fs_info);
 	}
-
-	EXIT;
+	SEXIT;
 	return rc;
 }
 
@@ -344,7 +345,7 @@ lzfs_kill_sb(struct super_block *sb)
 {
 	vfs_t *vfsp;
 
-	ENTRY;
+	SENTRY;
         if(sb->s_fs_info) {
             vfsp = (vfs_t *) sb->s_fs_info;
             if (!vfsp->is_snap) {
@@ -352,7 +353,7 @@ lzfs_kill_sb(struct super_block *sb)
             }
         }
 	kill_anon_super(sb);
-	EXIT;
+	SEXIT;
 }
 
 struct file_system_type lzfs_fs_type = {

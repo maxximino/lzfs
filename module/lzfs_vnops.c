@@ -23,7 +23,7 @@
 
 #include <linux/fs.h>
 #include <sys/vnode.h>
-#include <sys/debug.h>
+#include <spl-debug.h>
 #include <sys/tsd_hashtable.h>
 #include <linux/writeback.h>
 #include <sys/lzfs_snap.h>
@@ -51,14 +51,14 @@ static int lzfs_vnop_getattr(struct vfsmount *mnt, struct dentry *dentry, struct
 	const struct cred *cred = get_current_cred();
 	int err;
 
-	ENTRY;
+	SENTRY;
 	vnode = LZFS_ITOV(inode);
 
 	err = zfs_getattr(vnode, &vap, 0, (struct cred *) cred, NULL);
 	if (err) {
 		put_cred(cred);
 		tsd_exit();
-		EXIT;
+		SEXIT;
 		return PTR_ERR(ERR_PTR(-err));
 	}
 
@@ -79,7 +79,7 @@ static int lzfs_vnop_getattr(struct vfsmount *mnt, struct dentry *dentry, struct
 	//stat->blocks    = stat->size >> inode->i_blkbits;
 	put_cred(cred);
 	tsd_exit();
-	EXIT;
+	SEXIT;
 	return 0;
 }
 
@@ -94,7 +94,7 @@ lzfs_vnop_create(struct inode *dir, struct dentry *dentry, int mode,
 
 	int err;
 
-	ENTRY;
+	SENTRY;
 	err = checkname((char *)dentry->d_name.name);
 	if(err)
 		return -ENAMETOOLONG;
@@ -117,12 +117,12 @@ lzfs_vnop_create(struct inode *dir, struct dentry *dentry, int mode,
 	kfree(vap);
 	if (err) {
 		tsd_exit();
-		EXIT;
+		SEXIT;
 		return PTR_ERR(ERR_PTR(-err));
 	}
 	d_instantiate(dentry, LZFS_VTOI(vp));
 	tsd_exit();
-	EXIT;
+	SEXIT;
 	return 0;
 }
 
@@ -137,12 +137,12 @@ lzfs_vnop_readdir(struct file *filp, void *dirent, filldir_t filldir)
 	int eof, err;
 	struct inode *inode = filp->f_path.dentry->d_inode;
 
-	ENTRY;
+	SENTRY;
 	vp = LZFS_ITOV(inode);
 	err = zfs_readdir(vp, dirent, NULL, &eof, NULL, 0, filldir, 
 			&filp->f_pos);
 	tsd_exit();
-	EXIT;
+	SEXIT;
 	if (err)
 		return PTR_ERR(ERR_PTR(-err));
 	return 0;
@@ -158,7 +158,7 @@ lzfs_vnop_lookup(struct inode * dir, struct dentry *dentry,
 	int err;
 	const struct cred *cred = get_current_cred();
 
-	ENTRY;
+	SENTRY;
 	err = checkname((char *)dentry->d_name.name);
 	if(err)
 		return ((void * )-ENAMETOOLONG);
@@ -168,7 +168,7 @@ lzfs_vnop_lookup(struct inode * dir, struct dentry *dentry,
 			(struct cred *) cred, NULL, NULL, NULL);
 	put_cred(cred);
 	tsd_exit();
-	EXIT;
+	SEXIT;
 	if (err) {
 		if (err == ENOENT)
 			return d_splice_alias(NULL, dentry);	
@@ -195,7 +195,7 @@ lzfs_vnop_link (struct dentry *old_dentry, struct inode * dir,
 	const struct cred *cred = get_current_cred();
 	int err;
 
-	ENTRY;
+	SENTRY;
 	/* Linux Kernel enforces a limit on number of hardlinks to a file. 
 	 * struct kstat used in getattr uses unsigned int variable to store 
 	 * hardlink count. ZFS does not restrict the number of hardlinks, 
@@ -228,13 +228,13 @@ lzfs_vnop_link (struct dentry *old_dentry, struct inode * dir,
 		 */
 		iput(inode);
 		tsd_exit();
-		EXIT;
+		SEXIT;
 		return PTR_ERR(ERR_PTR(-err));
 	}
 
 	d_instantiate(dentry, LZFS_VTOI(svp));
 	tsd_exit();
-	EXIT;
+	SEXIT;
 	return 0;
 }
 
@@ -245,13 +245,13 @@ lzfs_vnop_unlink(struct inode *dir, struct dentry *dentry)
 	const struct cred *cred = get_current_cred();
 	int err;
 
-	ENTRY;
+	SENTRY;
 	dvp = LZFS_ITOV(dir);
 	err = zfs_remove(dvp, (char *)dentry->d_name.name, 
 			(struct cred *)cred, NULL, 0);
 	put_cred(cred);
 	tsd_exit();
-	EXIT;
+	SEXIT;
 	if (err)
 		return PTR_ERR(ERR_PTR(-err));
 
@@ -271,7 +271,7 @@ lzfs_vnop_symlink (struct inode *dir, struct dentry *dentry,
 	const struct cred *cred = get_current_cred();
 	int err;
 
-	ENTRY;
+	SENTRY;
 	err = checkname((char *)dentry->d_name.name);
 	if(err)
 		return ENAMETOOLONG;
@@ -293,12 +293,12 @@ lzfs_vnop_symlink (struct inode *dir, struct dentry *dentry,
 	put_cred(cred);
 	if (err) {
 		tsd_exit();
-		EXIT;
+		SEXIT;
 		return PTR_ERR(ERR_PTR(-err));
 	}
 	d_instantiate(dentry, LZFS_VTOI(vp));
 	tsd_exit();
-	EXIT;
+	SEXIT;
 	return 0;
 }
 
@@ -311,7 +311,7 @@ lzfs_vnop_mkdir(struct inode *dir, struct dentry *dentry, int mode)
 	const struct cred *cred = get_current_cred();
 	int err;
 
-	ENTRY;
+	SENTRY;
 	err = checkname((char *)dentry->d_name.name);
 	if(err)
 		return -ENAMETOOLONG;
@@ -331,12 +331,12 @@ lzfs_vnop_mkdir(struct inode *dir, struct dentry *dentry, int mode)
 	put_cred(cred);	
 	if (err) {
 		tsd_exit();
-		EXIT;
+		SEXIT;
 		return PTR_ERR(ERR_PTR(-err));
 	}
 	d_instantiate(dentry, LZFS_VTOI(vp));
 	tsd_exit();
-	EXIT;
+	SEXIT;
 	return 0;
 }
 
@@ -347,13 +347,13 @@ lzfs_vnop_rmdir(struct inode * dir, struct dentry *dentry)
     const struct cred *cred = get_current_cred();
     int err;
 
-    ENTRY;
+    SENTRY;
     dvp = LZFS_ITOV(dir);
     err = zfs_rmdir(dvp, (char *)dentry->d_name.name, NULL, 
             (struct cred *) cred, NULL, 0);
     put_cred(cred);
 	tsd_exit();
-    EXIT;
+    SEXIT;
     if (err) 
     	return PTR_ERR(ERR_PTR(-err));
     return 0;
@@ -376,7 +376,7 @@ lzfs_vnop_mknod(struct inode * dir, struct dentry *dentry, int mode,
 
 	int err;
 
-	ENTRY;
+	SENTRY;
 	vap = kmalloc(sizeof(vattr_t), GFP_KERNEL);
 	ASSERT(vap != NULL);
 
@@ -402,12 +402,12 @@ lzfs_vnop_mknod(struct inode * dir, struct dentry *dentry, int mode,
 	kfree(vap);
 	if (err) {
 		tsd_exit();
-		EXIT;
+		SEXIT;
 		return PTR_ERR(ERR_PTR(-err));
 	}
 	d_instantiate(dentry, LZFS_VTOI(vp));
 	tsd_exit();
-	EXIT;
+	SEXIT;
 	return 0;
 }
 
@@ -420,13 +420,13 @@ lzfs_vnop_rename (struct inode * old_dir, struct dentry * old_dentry,
 	const struct cred *cred = get_current_cred();
 	int err;
 
-	ENTRY;
+	SENTRY;
 	err = zfs_rename(sdvp, (char *)old_dentry->d_name.name, tdvp, 
 			(char *) new_dentry->d_name.name, (struct cred *)cred, 
 			NULL, 0);	
 	put_cred(cred);
 	tsd_exit();
-	EXIT;
+	SEXIT;
 	if (err)
 		return PTR_ERR(ERR_PTR(-err));
 	return 0;
@@ -442,7 +442,7 @@ lzfs_vnop_setattr(struct dentry *dentry, struct iattr *iattr)
 	const struct cred *cred = get_current_cred();
 	int err;
 
-	ENTRY;
+	SENTRY;
 	err = inode_change_ok(inode, iattr);
 	if(err)
 	    return err;
@@ -490,7 +490,7 @@ lzfs_vnop_setattr(struct dentry *dentry, struct iattr *iattr)
 			kfree(vap);
 			put_cred(cred);
 			tsd_exit();
-			EXIT;
+			SEXIT;
 			return err;
 		}
 	}
@@ -499,7 +499,7 @@ lzfs_vnop_setattr(struct dentry *dentry, struct iattr *iattr)
 	kfree(vap);
 	put_cred(cred);
 	tsd_exit();
-	EXIT;
+	SEXIT;
 	if (err)
 		return PTR_ERR(ERR_PTR(-err));
 	return 0;
@@ -531,12 +531,12 @@ static void *lzfs_follow_link(struct dentry *dentry, struct nameidata *nd)
 	uio_t uio;
 	int err;
 
-	ENTRY;
+	SENTRY;
 
 	if (NULL == (buf = kzalloc(len + 1, GFP_KERNEL))) {
 		put_cred(cred);
 		tsd_exit();
-		EXIT;
+		SEXIT;
 		return ERR_PTR(-ENOMEM);
 	}
 
@@ -560,7 +560,7 @@ static void *lzfs_follow_link(struct dentry *dentry, struct nameidata *nd)
 	nd_set_link(nd, buf);
 	put_cred(cred);
 	tsd_exit();
-	EXIT;
+	SEXIT;
 	return NULL;
 }
 
@@ -574,7 +574,7 @@ lzfs_vnop_readlink(struct dentry *dentry, char __user *buf, int len)
 	uio_t uio;
 	int err;
 
-	ENTRY;
+	SENTRY;
 	uio.uio_iov = &iov;
 	uio.uio_iovcnt = 1;
 	uio.uio_resid = len;
@@ -584,7 +584,7 @@ lzfs_vnop_readlink(struct dentry *dentry, char __user *buf, int len)
 	err = zfs_readlink(vp, &uio, (struct cred *)cred, NULL);
 	if (err)
 		return PTR_ERR(ERR_PTR(-err));
-	EXIT;
+	SEXIT;
 /*
 	printk("%s err %d ret %d\n", __FUNCTION__, err, 
 	       (int)(len - uio.uio_resid));
@@ -599,13 +599,13 @@ int lzfs_vnop_fsync(struct file *filep, struct dentry *dentry, int datasync)
 	vnode_t *vp = NULL;
 	const struct cred *cred = get_current_cred();
 
-	ENTRY;
+	SENTRY;
 
 	vp = LZFS_ITOV(filep->f_path.dentry->d_inode); 
 	err = zfs_fsync(vp, datasync, (struct cred *)cred, NULL);
 
 	put_cred(cred);
-	EXIT;
+	SEXIT;
 	return err;
 }
 
@@ -689,7 +689,7 @@ lzfs_vnop_read (struct file *filep, char __user *buf, size_t len, loff_t *ppos)
 	unsigned int prev_offset;
 	read_descriptor_t desc;
 
-	ENTRY;
+	SENTRY;
 	vp  = LZFS_ITOV(inode);
 
 	if (likely(!(vp->v_flag & VMMAPPED))) {
@@ -699,7 +699,7 @@ lzfs_vnop_read (struct file *filep, char __user *buf, size_t len, loff_t *ppos)
 		if (likely(rc > 0))
 			*ppos += rc;
 		tsd_exit();
-		EXIT;
+		SEXIT;
 		return rc;
 	}
 
@@ -815,7 +815,7 @@ no_cached_page:
 		ret = lzfs_read(vp, desc.arg.buf, size, *ppos, UIO_USERSPACE);
 		if (unlikely(ret < 0)) {
 			tsd_exit();
-			EXIT;
+			SEXIT;
 			return ret;
 		}
 
@@ -842,7 +842,7 @@ out:
 //	*ppos = ((loff_t)index << PAGE_CACHE_SHIFT) + offset;
 	zfs_file_accessed(vp);
 	tsd_exit();
-	EXIT;
+	SEXIT;
 	return ((ssize_t) (desc.written));
 }
 
@@ -907,7 +907,7 @@ lzfs_vnop_write (struct file *filep, const char __user *buf, size_t len,
 	 * with O_APPEND flag pos_append would be assigned size of inode */
 	loff_t pos_append = 0;
 
-	ENTRY;
+	SENTRY;
 
 	vp = LZFS_ITOV(inode);
 
@@ -918,7 +918,7 @@ lzfs_vnop_write (struct file *filep, const char __user *buf, size_t len,
 		if (likely(rc > 0))
 			*ppos += rc;
 		tsd_exit();
-		EXIT;
+		SEXIT;
 		return rc;
 	}
 
@@ -1016,11 +1016,11 @@ no_cached_page:
 	}
 
 	tsd_exit();
-	EXIT;
+	SEXIT;
 	return ((ssize_t) written);
 out_error:
 	tsd_exit();
-	EXIT;
+	SEXIT;
 	return err;
 }
 

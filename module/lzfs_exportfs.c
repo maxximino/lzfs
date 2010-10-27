@@ -25,6 +25,8 @@
 #include <sys/vfs.h>
 #include <sys/lzfs_exportfs.h>
 #include <sys/tsd_wrapper.h>
+#include <sys/vnode.h>
+#include <spl-debug.h>
 
 extern int zfs_fid(vnode_t *vp, fid_t *fidp, caller_context_t *ct);
 extern int zfs_vget(vfs_t *vfsp, vnode_t **vpp, fid_t *fidp);
@@ -40,7 +42,7 @@ static int lzfs_encode_fh(struct dentry *dentry, u32 *fh, int *max_len, int conn
 	vnode_t *vp;
 	int error = 0;
 
-	ENTRY;
+	SENTRY;
 	lzfid->fid_len = *max_len;
 	if (!(S_ISDIR(inode->i_mode) || !connectable)) {
 		spin_lock(&dentry->d_lock);
@@ -52,7 +54,7 @@ static int lzfs_encode_fh(struct dentry *dentry, u32 *fh, int *max_len, int conn
 	vp = LZFS_ITOV(inode);
 	error = zfs_fid( vp, lzfid, 0);
 	tsd_exit();
-	EXIT;
+	SEXIT;
 
 	if (error) {
 		printk(KERN_WARNING "Unable to get file handle \n");
@@ -73,7 +75,7 @@ struct dentry * lzfs_fh_to_dentry(struct super_block *sb, struct fid *fid,
 	int error = 0;
 	struct dentry *dentry = NULL;
 
-	ENTRY;
+	SENTRY;
 	if (fh_len < 2) {
 		return NULL;
 	}
@@ -86,7 +88,7 @@ struct dentry * lzfs_fh_to_dentry(struct super_block *sb, struct fid *fid,
 	}
 
 	tsd_exit();
-	EXIT;
+	SEXIT;
 	if (error) {
 		printk(KERN_WARNING "Unable to get vnode \n");
 		return NULL;
@@ -105,13 +107,13 @@ struct dentry *lzfs_get_parent(struct dentry *child)
 	struct dentry *dentry = NULL;
 	const struct cred *cred = get_current_cred();
 
-	ENTRY;
+	SENTRY;
 	error = zfs_lookup(vcp, "..", &vp, NULL, 0 , NULL,
 			(struct cred *) cred, NULL, NULL, NULL);
 
 	put_cred(cred);
 	tsd_exit();
-	EXIT;
+	SEXIT;
 	if (error) {
 		if (error == ENOENT) {
 			printk(KERN_WARNING "Try to get new dentry \n");
