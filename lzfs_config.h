@@ -68,7 +68,7 @@
 #define LZFS_META_RELEASE "1"
 
 /* Define the project version. */
-#define LZFS_META_VERSION "beta"
+#define LZFS_META_VERSION "beta-03"
 
 /* Name of package */
 #define PACKAGE "lzfs"
@@ -92,7 +92,7 @@
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION "beta"
+#define VERSION "beta-03"
 
 /* Define for Solaris 2.5.1 so the uint32_t typedef from <sys/synch.h>,
    <pthread.h>, or <semaphore.h> is not used. If the typedef were allowed, the
