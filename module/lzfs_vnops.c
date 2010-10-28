@@ -104,7 +104,8 @@ lzfs_vnop_create(struct inode *dir, struct dentry *dentry, int mode,
 
 	memset(vap, 0, sizeof(vap));
 
-	vap->va_type = IFTOVT(mode);
+//	vap->va_type = IFTOVT(mode);
+	vap->va_type = VREG;
 	vap->va_mode = mode;
 	vap->va_mask = AT_TYPE|AT_MODE;
 	vap->va_uid = current_fsuid();
