@@ -60,16 +60,15 @@ lzfs_xattr_get(struct inode *inode, const char *name,
 	xinode = LZFS_VTOI(xvp);
 	if(!size)
 		return ((int) xinode->i_size); 
-                iov.iov_base = buffer;
+        iov.iov_base = buffer;
        //        iov.iov_len  = xinode->i_size,
-       		iov.iov_len  = size;
-
-               uio.uio_iov     = &iov;
-                uio.uio_resid   = size;
-                uio.uio_iovcnt  = 1;
-                uio.uio_loffset = (offset_t)0;
+	iov.iov_len  = size;
+	uio.uio_iov     = &iov;
+	uio.uio_resid   = size;
+	uio.uio_iovcnt  = 1;
+	uio.uio_loffset = (offset_t)0;
 //                uio.uio_limit   = MAXOFFSET_T,
-                uio.uio_segflg  = UIO_SYSSPACE;
+	uio.uio_segflg  = UIO_SYSSPACE;
 
 	printk("size of read is :%ld\n", (long) xinode->i_size);
 	err = zfs_read(xvp, &uio, 0, (cred_t *)cred, NULL);
@@ -81,7 +80,7 @@ lzfs_xattr_get(struct inode *inode, const char *name,
 	
 	printk("read file buffer arg is : %s\n", (char *)buffer);
 //	up_write(inode->xattr_sem);
-	return err;
+	return size - uio.uio_resid;
 }
 
 
