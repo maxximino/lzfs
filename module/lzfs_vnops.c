@@ -28,6 +28,7 @@
 #include <linux/writeback.h>
 #include <sys/lzfs_snap.h>
 #include <linux/xattr.h>
+#include <sys/lzfs_xattr.h>
 
 #ifdef DEBUG_SUBSYSTEM
 #undef DEBUG_SUBSYSTEM
@@ -1080,7 +1081,7 @@ const struct inode_operations zfs_inode_operations = {
 	.permission     = lzfs_vnop_permission,
 	.setxattr       = generic_setxattr,
         .getxattr       = generic_getxattr,
- //       .listxattr      = ext2_listxattr,
+	.listxattr      = lzfs_listxattr,
  	.removexattr    = generic_removexattr,
 
 };
