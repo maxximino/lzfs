@@ -27,6 +27,7 @@
 #include <sys/tsd_hashtable.h>
 #include <linux/writeback.h>
 #include <sys/lzfs_snap.h>
+#include <linux/fsync_compat.h>
 
 #ifdef DEBUG_SUBSYSTEM
 #undef DEBUG_SUBSYSTEM
@@ -593,7 +594,7 @@ lzfs_vnop_readlink(struct dentry *dentry, char __user *buf, int len)
 	return ((int) (len - uio.uio_resid));
 }
 #endif
-int lzfs_vnop_fsync(struct file *filep, struct dentry *dentry, int datasync)
+LZFS_VNOP_FSYNC_HANDLER(lzfs_vnop_fsync)
 {       
 	int err = 0;
 	vnode_t *vp = NULL;
