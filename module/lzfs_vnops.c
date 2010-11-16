@@ -27,6 +27,8 @@
 #include <sys/tsd_hashtable.h>
 #include <linux/writeback.h>
 #include <sys/lzfs_snap.h>
+#include <linux/xattr.h>
+#include <sys/lzfs_xattr.h>
 
 #ifdef DEBUG_SUBSYSTEM
 #undef DEBUG_SUBSYSTEM
@@ -1077,6 +1079,10 @@ const struct inode_operations zfs_inode_operations = {
 	.rename         = lzfs_vnop_rename,
 	.setattr        = lzfs_vnop_setattr,
 	.permission     = lzfs_vnop_permission,
+	.setxattr       = generic_setxattr,
+	.getxattr       = generic_getxattr,
+	.listxattr      = lzfs_listxattr,
+	.removexattr    = generic_removexattr,
 };
 
 const struct file_operations zfs_file_operations = {
