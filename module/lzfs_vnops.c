@@ -1082,7 +1082,7 @@ const struct inode_operations zfs_inode_operations = {
 	.setxattr       = generic_setxattr,
 	.getxattr       = generic_getxattr,
 	.listxattr      = lzfs_listxattr,
-	.removexattr    = generic_removexattr,
+	.removexattr    = lzfs_removexattr,
 };
 
 const struct file_operations zfs_file_operations = {

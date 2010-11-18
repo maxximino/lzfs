@@ -156,6 +156,20 @@ lzfs_listxattr(struct dentry *dentry, char *buffer, size_t size)
 	return err;	
 }
 
+int
+lzfs_removexattr(struct dentry *dentry, const char *name)
+{
+	struct inode *inode = dentry->d_inode;
+	struct xattr_handler *handler;
+
+	handler = find_xattr_handler_prefix(inode->i_sb->s_xattr, name);
+
+	if (!handler)
+		return -EOPNOTSUPP;
+
+	return handler->set(inode, name, NULL, 0, XATTR_REPLACE);
+}
+
 struct xattr_handler *lzfs_xattr_handlers[] = {
         &lzfs_xattr_user_handler,
 //        &lzfs_xattr_trusted_handler,

@@ -44,12 +44,20 @@ lzfs_xattr_user_set(struct inode *inode, const char *name,
 		.uio_segflg  = UIO_SYSSPACE,
 	};
 
+	
 	dvp = LZFS_ITOV(inode);
 	err = zfs_lookup(dvp, NULL, &vp, NULL, LOOKUP_XATTR | CREATE_XATTR_DIR,
 			 NULL, (struct cred *) cred, NULL, NULL, NULL);
 	if(err) {
 		return -err;
 	}
+	
+	if(!value) {
+		err =zfs_remove(vp, (char *) name,
+			(struct cred *)cred, NULL, 0);
+		return -err;
+	}
+
 	vap = kmalloc(sizeof(vattr_t), GFP_KERNEL);
 	ASSERT(vap != NULL);
 
@@ -63,6 +71,7 @@ lzfs_xattr_user_set(struct inode *inode, const char *name,
 	xattr_name = kzalloc(strlen(name) + 6, GFP_KERNEL);
 	xattr_name = strncpy(xattr_name, "user.", 5);
 	xattr_name = strncat(xattr_name, name, strlen(name));
+	
 	err = zfs_create(vp, xattr_name, vap, 0, 0644,
 			&xvp, (struct cred *)cred, 0, NULL, NULL);
 	kfree(vap);
