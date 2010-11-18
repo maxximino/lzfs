@@ -34,6 +34,7 @@ lzfs_xattr_user_set(struct inode *inode, const char *name,
 		.iov_len  = size,
 	};
 
+	char *xattr_name = NULL;	
 	uio_t uio = {
 		.uio_iov     = &iov,
 		.uio_resid   = size,
@@ -59,10 +60,13 @@ lzfs_xattr_user_set(struct inode *inode, const char *name,
 	vap->va_mask = AT_TYPE|AT_MODE;
 	vap->va_uid = current_fsuid();
 	vap->va_gid = current_fsgid();
-
-	err = zfs_create(vp, (char *)name, vap, 0, 0644,
+	xattr_name = kzalloc(strlen(name) + 6, GFP_KERNEL);
+	xattr_name = strncpy(xattr_name, "user.", 5);
+	xattr_name = strncat(xattr_name, name, strlen(name));
+	err = zfs_create(vp, xattr_name, vap, 0, 0644,
 			&xvp, (struct cred *)cred, 0, NULL, NULL);
 	kfree(vap);
+	kfree(xattr_name);
 	if(err) {
 		return -err;
 	}
@@ -78,13 +82,11 @@ static size_t
 lzfs_xattr_user_list(struct inode *inode, char *list, size_t list_size,
                         const char *name, size_t name_len)
 {
-	const size_t prefix_len = XATTR_USER_PREFIX_LEN;
-	const size_t total_len = prefix_len + name_len + 1;
+	const size_t total_len = name_len + 1;
 
 	if (list && total_len <= list_size) {
-		memcpy(list, XATTR_USER_PREFIX, prefix_len);
-		memcpy(list+prefix_len, name, name_len);
-		list[prefix_len + name_len] = '\0';
+		memcpy(list, name, name_len);
+		list[name_len] = '\0';
 	}
 	return total_len;
 }

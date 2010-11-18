@@ -19,7 +19,8 @@ lzfs_xattr_get(struct inode *inode, const char *name,
 	const struct cred *cred = get_current_cred();
 	struct iovec iov;
 	uio_t uio;
-        
+	char *xattr_name = NULL;        
+
 	dvp = LZFS_ITOV(inode);
 	err = zfs_lookup(dvp, NULL, &vp, NULL, LOOKUP_XATTR, NULL,
 			(struct cred *) cred, NULL, NULL, NULL);
@@ -28,11 +29,16 @@ lzfs_xattr_get(struct inode *inode, const char *name,
         }
 	ASSERT(vp != NULL);
 	
-	err = zfs_lookup(vp, (char *) name, &xvp, NULL, 0, NULL,
+	xattr_name = kzalloc(strlen(name) + 6, GFP_KERNEL);
+	xattr_name = strncpy(xattr_name, "user.", 5);
+	xattr_name = strncat(xattr_name, name, strlen(name));
+
+	err = zfs_lookup(vp, (char *) xattr_name, &xvp, NULL, 0, NULL,
 	(struct cred *) cred, NULL, NULL, NULL);
 	if(err) {
 		return -err;
 	}
+	kfree(xattr_name);
 	xinode = LZFS_VTOI(xvp);
 	if(!size) {
 		return ((int) xinode->i_size); 
@@ -99,7 +105,7 @@ static int listxattr_filler(void *buf, const char *name, int namelen,
 			struct xattr_handler *handler;
 			handler = find_xattr_handler_prefix(
 					b->inode->i_sb->s_xattr,
-					"user.");
+					name);
 			if (!handler)
 				return 0;
 			if (b->buf) {
@@ -115,7 +121,6 @@ static int listxattr_filler(void *buf, const char *name, int namelen,
 	b->pos += size;
         return 0;
 }
-
 
 ssize_t
 lzfs_listxattr(struct dentry *dentry, char *buffer, size_t size)
