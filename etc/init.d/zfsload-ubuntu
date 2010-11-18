@@ -1,0 +1,94 @@
+#!/bin/sh
+#update-rc.d: 2345 20 80
+# description:loads all modules required for zfs
+	### BEGIN INIT INFO
+	# Provides:          zfsload
+	# Required-Start:    $local_fs $syslog
+	# Required-Stop:     $local_fs $syslog
+	# Default-Start:     2 3 4 5
+	# Default-Stop:      0 1 6
+	# Short-Description: Start daemon at boot time	
+	# Description:       Enable service provided by zfs.
+### END INIT INFO
+
+
+# Source function library.
+
+. /lib/lsb/init-functions
+
+RETVAL=0
+exec=/usr/sbin/zfsload
+prog=zfsload
+config=/etc/zfsload/zfsload.conf
+lockfile=/var/lock/subsys/$prog
+
+start () {
+        modprobe lzfs
+        zpool import -a
+
+        return $RETVAL
+}
+
+stop () {
+	modprobe -r lzfs
+	modprobe -r zfs
+	modprobe -r zcommon
+	modprobe -r zunicode
+	modprobe -r znvpair
+	modprobe -r zavl
+	modprobe -r spl
+	modprobe -r zlib_deflate
+        #killproc $prog
+        RETVAL=$?
+        echo
+        [ $RETVAL = 0 ] && rm -f $lockfile
+        return 0
+}
+
+restart() {
+        stop
+        start
+}
+
+case $1 in
+        start)
+                start
+        ;;
+        stop)
+                stop
+        ;;
+        restart)
+                restart
+        ;;
+        condrestart|try-restart)
+                [ -f $lockfile ] && restart || :
+        ;;
+        reload)
+                echo -n $"Reloading $prog: "
+                killproc $prog -HUP
+                RETVAL=$?
+                echo
+        ;;
+        force-reload)
+                echo -n $"Reloading $prog: "
+                if ! killproc $prog -HUP; then
+                        restart
+                fi
+                echo
+        ;;
+status)
+                status $prog
+                RETVAL=$?
+        ;;
+        restartlog)
+                stop
+                cat /dev/null >/var/log/zfsload/error_log
+                start
+        ;;
+        *)
+
+        echo $"Usage: $prog {start|stop|restart|condrestart|try-restart|reload|force-reload|status}"
+        exit 2
+esac
+
+exit $RETVAL
