@@ -9,7 +9,7 @@
 
 int
 lzfs_xattr_get(struct inode *inode, const char *name,
-                    void *buffer, size_t size)
+                    void *buffer, size_t size, int index)
 {
 	struct inode *xinode = NULL;	
 	vnode_t *vp;
@@ -28,11 +28,16 @@ lzfs_xattr_get(struct inode *inode, const char *name,
 		return -err;
         }
 	ASSERT(vp != NULL);
-	
-	xattr_name = kzalloc(strlen(name) + 6, GFP_KERNEL);
-	xattr_name = strncpy(xattr_name, "user.", 5);
-	xattr_name = strncat(xattr_name, name, strlen(name));
-
+	if(index == 0) {
+		xattr_name = kzalloc(strlen(name) + 6, GFP_KERNEL);
+		xattr_name = strncpy(xattr_name, "user.", 5);
+		xattr_name = strncat(xattr_name, name, strlen(name));
+	}
+	else if(index == 1) {
+		xattr_name = kzalloc(strlen(name) + 10, GFP_KERNEL);
+        	xattr_name = strncpy(xattr_name, "security.", 9);
+        	xattr_name = strncat(xattr_name, name, strlen(name));
+	}
 	err = zfs_lookup(vp, (char *) xattr_name, &xvp, NULL, 0, NULL,
 	(struct cred *) cred, NULL, NULL, NULL);
 	if(err) {
@@ -177,9 +182,9 @@ struct xattr_handler *lzfs_xattr_handlers[] = {
   //      &lzfs_xattr_acl_access_handler,
     //    &lzfs_xattr_acl_default_handler,
 #endif  
-#ifdef CONFIG_EXT2_FS_SECURITY
-      //  &lzfs_xattr_security_handler,
-#endif          
+//#ifdef CONFIG_EXT2_FS_SECURITY
+	&lzfs_xattr_security_handler,
+//#endif          
         NULL
 };
 

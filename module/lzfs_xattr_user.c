@@ -15,7 +15,7 @@ lzfs_xattr_user_get(struct inode *inode, const char *name,
 		return -EINVAL;
 	}
 
-	return lzfs_xattr_get(inode, name, buffer, size);
+	return lzfs_xattr_get(inode, name, buffer, size, 0);
 }
 
 static int      
