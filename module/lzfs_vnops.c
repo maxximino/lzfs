@@ -1066,6 +1066,112 @@ int lzfs_file_mmap(struct file * file, struct vm_area_struct * vma)
 	return rc;
 }
 
+static ssize_t
+lzfs_vnop_aio_read(struct kiocb *iocb, const struct iovec *iov,
+                unsigned long nr_segs, loff_t pos)
+{
+	ssize_t result;
+
+	SENTRY;
+	result = generic_file_aio_read(iocb, iov, nr_segs, pos);
+	tsd_exit();
+	SEXIT;
+	return result;
+}
+
+static ssize_t lzfs_perform_write(struct file *file,
+                                struct iov_iter *i, loff_t pos)
+{
+	struct address_space *mapping = file->f_mapping;
+	long status = 0;
+	ssize_t written = 0;
+	vnode_t *vp = LZFS_ITOV(mapping->host);
+       
+	do {
+		status = lzfs_write(vp, file->f_flags, 
+				i->iov->iov_base, i->iov->iov_len, pos,
+				UIO_USERSPACE);
+		if (unlikely(status)) {
+			break;
+		}
+		pos += status;
+		written += status;
+	} while (iov_iter_count(i));
+	return written ? written : status;
+}
+
+ssize_t
+lzfs_file_buffered_write(struct kiocb *iocb, const struct iovec *iov,
+                unsigned long nr_segs, loff_t pos, loff_t *ppos,
+                size_t count, ssize_t written)
+{
+	struct file *file = iocb->ki_filp;
+	ssize_t status;
+	struct iov_iter i;
+       
+	iov_iter_init(&i, iov, nr_segs, count, written);
+	status = lzfs_perform_write(file, &i, pos);
+
+	return status;
+}
+
+static ssize_t
+__lzfs_vnop_aio_write(struct kiocb *iocb, const struct iovec *iov,
+                                unsigned long nr_segs, loff_t *ppos)
+{
+	struct file *file = iocb->ki_filp;
+	struct address_space * mapping = file->f_mapping;
+	size_t ocount;          /* original count */
+	size_t count;           /* after file limit checks */
+	struct inode *inode = mapping->host;
+	loff_t pos;
+	ssize_t written;
+	ssize_t err;
+
+	ocount = 0;
+	err = generic_segment_checks(iov, &nr_segs, &ocount, VERIFY_READ);
+	if(err) {
+		return err;
+	}
+
+	count = ocount;
+	pos = *ppos;
+
+	written = 0;
+
+	err = generic_write_checks(file, &pos, &count, S_ISBLK(inode->i_mode));
+	if(err) {
+               goto out;
+	}
+
+	if(count == 0) {
+		goto out;
+	}
+               
+	file_update_time(file);
+	written = lzfs_file_buffered_write(iocb, iov, nr_segs,
+			pos, ppos, count, written);
+out:
+	return written ? written : err;
+}
+
+static ssize_t
+lzfs_vnop_aio_write(struct kiocb *iocb, const struct iovec *iov,
+                unsigned long nr_segs, loff_t pos)
+{
+
+	ssize_t ret;
+
+	SENTRY;
+	BUG_ON(iocb->ki_pos != pos);
+	ret = __lzfs_vnop_aio_write(iocb, iov, nr_segs,
+				&iocb->ki_pos);
+	tsd_exit();
+	SEXIT;
+	return ret;
+}
+
+
 const struct inode_operations zfs_inode_operations = {
 	.getattr	= lzfs_vnop_getattr,
 	.create         = lzfs_vnop_create,
@@ -1081,14 +1187,16 @@ const struct inode_operations zfs_inode_operations = {
 };
 
 const struct file_operations zfs_file_operations = {
-    .open               = lzfs_vnop_open,
+	.open               = lzfs_vnop_open,
     //.llseek           = generic_file_llseek,
-    .read               = lzfs_vnop_read,
-    .write              = lzfs_vnop_write,
-    .readdir            = lzfs_vnop_readdir,
-    .mmap               = lzfs_file_mmap,
+	.read               = lzfs_vnop_read,
+	.write              = lzfs_vnop_write,
+	.readdir            = lzfs_vnop_readdir,
+	.mmap               = lzfs_file_mmap,
     //.unlocked_ioctl   = lzfs_fop_ioctl,
-    .fsync              = lzfs_vnop_fsync,
+	.fsync              = lzfs_vnop_fsync,
+	.aio_read           = lzfs_vnop_aio_read,
+	.aio_write          = lzfs_vnop_aio_write,
 };
 
 const struct inode_operations zfs_dir_inode_operations ={
