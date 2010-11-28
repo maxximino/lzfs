@@ -148,6 +148,9 @@ static int lzfs_statfs(struct dentry *dentry, struct kstatfs *statfs)
 	statfs->f_files = stat.f_files;
 	statfs->f_ffree = stat.f_ffree;
 	statfs->f_namelen = stat.f_namemax;
+	statfs->f_fsid.val[0] = (u32)stat.f_fsid;
+	statfs->f_fsid.val[1] = (u32)(stat.f_fsid >> 32);
+
 	return 0;
 }
 
