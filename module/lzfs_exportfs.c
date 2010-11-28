@@ -36,7 +36,7 @@ extern int zfs_lookup(vnode_t *dvp, char *nm, vnode_t **vpp, struct pathname *pn
 
 static int lzfs_encode_fh(struct dentry *dentry, u32 *fh, int *max_len, int connectable)
 {
-	struct lzfs_fid  *lzfid = (struct lzfs_fid *)fh;
+	lzfs_fid_t  *lzfid = (lzfs_fid_t *)fh;
 	struct inode *inode = dentry->d_inode;
 	int lfid_type = LZFS_FILEID_INO64_GEN;
 	vnode_t *vp;
@@ -69,7 +69,7 @@ static int lzfs_encode_fh(struct dentry *dentry, u32 *fh, int *max_len, int conn
 struct dentry * lzfs_fh_to_dentry(struct super_block *sb, struct fid *fid,
                                  int fh_len, int fh_type)
 {
-	struct lzfs_fid  *lzfid = (struct lzfs_fid *)fid;
+	lzfs_fid_t  *lzfid = (lzfs_fid_t *)fid;
 	vfs_t *vfsp = sb->s_fs_info;
 	vnode_t *vp;
 	int error = 0;

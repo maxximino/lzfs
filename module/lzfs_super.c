@@ -39,6 +39,7 @@
 #include <spl-debug.h>
 #include <sys/lzfs_inode.h>
 #include <sys/lzfs_snap.h>
+#include <sys/lzfs_exportfs.h>
 
 #include <sys/mntent.h>
 #include <spl_config.h>
@@ -234,7 +235,7 @@ lzfs_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_op	  =	&lzfs_ops;
 	sb->s_time_gran	  =	1;
 	sb->s_flags	  =	MS_ACTIVE;
-//	sb->s_export_op	  =     &zfs_export_ops;
+	sb->s_export_op	  =     &zfs_export_ops;
 	error = zfs_domount(vfsp, data);
 	if (error) {
 		printk(KERN_WARNING "mount failed to open the pool!!\n");
