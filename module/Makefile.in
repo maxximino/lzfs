@@ -54,6 +54,8 @@ modules_uninstall:
 	$(RM) -R $(DESTDIR)/lib/modules/@LINUX_VERSION@/addon/lzfs
 
 distdir:
+	(find ./ -name '*.c' -o -name '*.h' | \
+	xargs /bin/cp -t $$distdir/$$subdir); \
 
 distclean maintainer-clean: clean
 install: modules_install
