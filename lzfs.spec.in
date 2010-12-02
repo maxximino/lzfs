@@ -211,7 +211,7 @@ else
 	depmod -ae %{kver} || exit 0
 fi
 /sbin/chkconfig --add  zfsload
-
+service zfsload start
 
 %postun
 if [ -f /boot/System.map-%{kver} ]; then
@@ -219,3 +219,6 @@ if [ -f /boot/System.map-%{kver} ]; then
 else
 	depmod -ae %{kver} || exit 0
 fi
+service zfsload stop
+/sbin/chkconfig --del  zfsload
+
