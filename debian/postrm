@@ -4,4 +4,3 @@
 # see: dh_installdeb(1)
 
 /usr/sbin/update-rc.d -f zfsload remove
-/bin/rm -f /etc/init.d/zfsload
