@@ -1,14 +1,14 @@
 #!/bin/sh
-#update-rc.d: 2345 20 80
+
 # description:loads all modules required for zfs
-	### BEGIN INIT INFO
-	# Provides:          zfsload
-	# Required-Start:    $local_fs $syslog
-	# Required-Stop:     $local_fs $syslog
-	# Default-Start:     2 3 4 5
-	# Default-Stop:      0 1 6
-	# Short-Description: Start daemon at boot time	
-	# Description:       Enable service provided by zfs.
+### BEGIN INIT INFO
+# Provides:          zfsload
+# Required-Start:    $local_fs 
+# Required-Stop:     $local_fs 
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start daemon at boot time	
+# Description:       Enable service provided by zfs.
 ### END INIT INFO
 
 
@@ -16,6 +16,7 @@
 
 . /lib/lsb/init-functions
 
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/
 RETVAL=0
 exec=/usr/sbin/zfsload
 prog=zfsload
@@ -31,14 +32,6 @@ start () {
 
 stop () {
 	modprobe -r lzfs
-	modprobe -r zfs
-	modprobe -r zcommon
-	modprobe -r zunicode
-	modprobe -r znvpair
-	modprobe -r zavl
-	modprobe -r spl
-	modprobe -r zlib_deflate
-        #killproc $prog
         RETVAL=$?
         echo
         [ $RETVAL = 0 ] && rm -f $lockfile
