@@ -32,7 +32,14 @@ start () {
 
 stop () {
 	modprobe -r lzfs
-        RETVAL=$?
+	modprobe -r zfs
+	modprobe -r zcommon
+	modprobe -r zunicode
+	modprobe -r znvpair
+	modprobe -r zavl
+	modprobe -r spl
+
+	RETVAL=$?
         echo
         [ $RETVAL = 0 ] && rm -f $lockfile
         return 0
