@@ -28,6 +28,8 @@
 #include <linux/writeback.h>
 #include <sys/lzfs_snap.h>
 #include <linux/fsync_compat.h>
+#include <linux/xattr.h>
+#include <sys/lzfs_xattr.h>
 
 #ifdef DEBUG_SUBSYSTEM
 #undef DEBUG_SUBSYSTEM
@@ -93,7 +95,7 @@ lzfs_vnop_create(struct inode *dir, struct dentry *dentry, int mode,
 	vattr_t *vap;
 	const struct cred *cred = get_current_cred();
 
-	int err;
+	int err, se_err;
 
 	SENTRY;
 	err = checkname((char *)dentry->d_name.name);
@@ -116,6 +118,12 @@ lzfs_vnop_create(struct inode *dir, struct dentry *dentry, int mode,
 			 &vp, (struct cred *)cred, 0, NULL, NULL);
 	put_cred(cred);
 	kfree(vap);
+	se_err = lzfs_init_security(LZFS_VTOI(vp), dir);
+	if(se_err) {
+		tsd_exit();
+		SEXIT;
+		return se_err;
+	}
 	if (err) {
 		tsd_exit();
 		SEXIT;
@@ -270,7 +278,7 @@ lzfs_vnop_symlink (struct inode *dir, struct dentry *dentry,
 	vnode_t *vp;
 	vattr_t *vap;
 	const struct cred *cred = get_current_cred();
-	int err;
+	int err, se_err;
 
 	SENTRY;
 	err = checkname((char *)dentry->d_name.name);
@@ -292,6 +300,12 @@ lzfs_vnop_symlink (struct inode *dir, struct dentry *dentry,
 			(char *)symname, (struct cred *)cred , NULL, 0, &vp);
 	kfree(vap);
 	put_cred(cred);
+	se_err = lzfs_init_security(LZFS_VTOI(vp), dir);
+	if(se_err) {
+		tsd_exit();
+		SEXIT;
+		return se_err;
+	}
 	if (err) {
 		tsd_exit();
 		SEXIT;
@@ -310,7 +324,7 @@ lzfs_vnop_mkdir(struct inode *dir, struct dentry *dentry, int mode)
 	vnode_t *dvp;
 	vattr_t *vap;
 	const struct cred *cred = get_current_cred();
-	int err;
+	int err, se_err;
 
 	SENTRY;
 	err = checkname((char *)dentry->d_name.name);
@@ -329,7 +343,13 @@ lzfs_vnop_mkdir(struct inode *dir, struct dentry *dentry, int mode)
 	err = zfs_mkdir(dvp, (char *)dentry->d_name.name, vap,
 			&vp, (struct cred *) cred, NULL, 0, NULL);
 	kfree(vap);
-	put_cred(cred);	
+	put_cred(cred);
+	se_err = lzfs_init_security(LZFS_VTOI(vp), dir);
+	if(se_err) {
+		tsd_exit();
+		SEXIT;
+		return se_err;
+	}
 	if (err) {
 		tsd_exit();
 		SEXIT;
@@ -375,7 +395,7 @@ lzfs_vnop_mknod(struct inode * dir, struct dentry *dentry, int mode,
 	vattr_t *vap;
 	const struct cred *cred = get_current_cred();
 
-	int err;
+	int err, se_err;
 
 	SENTRY;
 	vap = kmalloc(sizeof(vattr_t), GFP_KERNEL);
@@ -401,6 +421,12 @@ lzfs_vnop_mknod(struct inode * dir, struct dentry *dentry, int mode,
 			 &vp, (struct cred *)cred, 0, NULL, NULL);
 	put_cred(cred);
 	kfree(vap);
+	se_err = lzfs_init_security(LZFS_VTOI(vp), dir);
+	if(se_err) {
+		tsd_exit();
+		SEXIT;
+		return se_err;
+	}
 	if (err) {
 		tsd_exit();
 		SEXIT;
@@ -1184,6 +1210,10 @@ const struct inode_operations zfs_inode_operations = {
 	.rename         = lzfs_vnop_rename,
 	.setattr        = lzfs_vnop_setattr,
 	.permission     = lzfs_vnop_permission,
+	.setxattr       = generic_setxattr,
+	.getxattr       = generic_getxattr,
+	.listxattr      = lzfs_listxattr,
+	.removexattr    = lzfs_removexattr,
 };
 
 const struct file_operations zfs_file_operations = {

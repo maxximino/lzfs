@@ -11,6 +11,10 @@ lzfs-objs += lzfs_super.o
 lzfs-objs += lzfs_vnops.o
 lzfs-objs += lzfs_snap.o
 lzfs-objs += lzfs_exportfs.o
+lzfs-objs += lzfs_xattr.o
+lzfs-objs += lzfs_xattr_user.o
+lzfs-objs += lzfs_xattr_security.o
+
 
 INSTALL=/usr/bin/install
 
