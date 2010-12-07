@@ -95,7 +95,10 @@ lzfs_vnop_create(struct inode *dir, struct dentry *dentry, int mode,
 	vattr_t *vap;
 	const struct cred *cred = get_current_cred();
 
-	int err, se_err;
+	int err;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)	
+	int se_err;
+#endif
 
 	SENTRY;
 	err = checkname((char *)dentry->d_name.name);
@@ -118,12 +121,14 @@ lzfs_vnop_create(struct inode *dir, struct dentry *dentry, int mode,
 			 &vp, (struct cred *)cred, 0, NULL, NULL);
 	put_cred(cred);
 	kfree(vap);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 	se_err = lzfs_init_security(LZFS_VTOI(vp), dir);
 	if(se_err) {
 		tsd_exit();
 		SEXIT;
 		return se_err;
 	}
+#endif
 	if (err) {
 		tsd_exit();
 		SEXIT;
@@ -278,8 +283,10 @@ lzfs_vnop_symlink (struct inode *dir, struct dentry *dentry,
 	vnode_t *vp;
 	vattr_t *vap;
 	const struct cred *cred = get_current_cred();
-	int err, se_err;
-
+	int err;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
+	int se_err;
+#endif
 	SENTRY;
 	err = checkname((char *)dentry->d_name.name);
 	if(err)
@@ -300,12 +307,14 @@ lzfs_vnop_symlink (struct inode *dir, struct dentry *dentry,
 			(char *)symname, (struct cred *)cred , NULL, 0, &vp);
 	kfree(vap);
 	put_cred(cred);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 	se_err = lzfs_init_security(LZFS_VTOI(vp), dir);
 	if(se_err) {
 		tsd_exit();
 		SEXIT;
 		return se_err;
 	}
+#endif
 	if (err) {
 		tsd_exit();
 		SEXIT;
@@ -324,8 +333,10 @@ lzfs_vnop_mkdir(struct inode *dir, struct dentry *dentry, int mode)
 	vnode_t *dvp;
 	vattr_t *vap;
 	const struct cred *cred = get_current_cred();
-	int err, se_err;
-
+	int err;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
+	int se_err;
+#endif
 	SENTRY;
 	err = checkname((char *)dentry->d_name.name);
 	if(err)
@@ -344,12 +355,14 @@ lzfs_vnop_mkdir(struct inode *dir, struct dentry *dentry, int mode)
 			&vp, (struct cred *) cred, NULL, 0, NULL);
 	kfree(vap);
 	put_cred(cred);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 	se_err = lzfs_init_security(LZFS_VTOI(vp), dir);
 	if(se_err) {
 		tsd_exit();
 		SEXIT;
 		return se_err;
 	}
+#endif
 	if (err) {
 		tsd_exit();
 		SEXIT;
@@ -395,8 +408,10 @@ lzfs_vnop_mknod(struct inode * dir, struct dentry *dentry, int mode,
 	vattr_t *vap;
 	const struct cred *cred = get_current_cred();
 
-	int err, se_err;
-
+	int err;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
+	int se_err;
+#endif
 	SENTRY;
 	vap = kmalloc(sizeof(vattr_t), GFP_KERNEL);
 	ASSERT(vap != NULL);
@@ -421,12 +436,14 @@ lzfs_vnop_mknod(struct inode * dir, struct dentry *dentry, int mode,
 			 &vp, (struct cred *)cred, 0, NULL, NULL);
 	put_cred(cred);
 	kfree(vap);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 	se_err = lzfs_init_security(LZFS_VTOI(vp), dir);
 	if(se_err) {
 		tsd_exit();
 		SEXIT;
 		return se_err;
 	}
+#endif
 	if (err) {
 		tsd_exit();
 		SEXIT;
@@ -1210,10 +1227,12 @@ const struct inode_operations zfs_inode_operations = {
 	.rename         = lzfs_vnop_rename,
 	.setattr        = lzfs_vnop_setattr,
 	.permission     = lzfs_vnop_permission,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 	.setxattr       = generic_setxattr,
 	.getxattr       = generic_getxattr,
 	.listxattr      = lzfs_listxattr,
 	.removexattr    = lzfs_removexattr,
+#endif
 };
 
 const struct file_operations zfs_file_operations = {
