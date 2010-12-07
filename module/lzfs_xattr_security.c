@@ -126,21 +126,21 @@ lzfs_xattr_security_list(struct dentry *dentry, char *list, size_t list_size,
 }
 
 int
-lzfs_init_security(struct inode *inode, struct inode *dir)
+lzfs_init_security(struct dentry *dentry, struct inode *dir)
 {
 	int err;
 	size_t len;
 	void *value;
 	char *name;
 
-	err = security_inode_init_security(inode, dir, &name, &value, &len);
+	err = security_inode_init_security(dentry->d_inode, dir, &name, &value, &len);
 	if (err) {
 		if (err == -EOPNOTSUPP)
 			return 0;
 		return err;
 	}
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
-	err = lzfs_xattr_security_set(inode, name, value, len, 0);
+	err = lzfs_xattr_security_set(dentry, name, value, len, 0);
 #endif
 	kfree(name);
 	kfree(value);
