@@ -1,5 +1,4 @@
 #include <linux/version.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 #include <linux/fs.h>
 #include <sys/vnode.h>
 #include <sys/vfs.h>
@@ -9,20 +8,36 @@
 #include <sys/lzfs_xattr.h>
 #include <linux/xattr.h>
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 static int
 lzfs_xattr_user_get(struct inode *inode, const char *name,
 			void *buffer, size_t size)
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+static int
+lzfs_xattr_user_get(struct dentry *dentry, const char *name,
+			void *buffer, size_t size, int type)
+#endif
 {
 	if(strcmp(name,"") == 0) {
 		return -EINVAL;
 	}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)	
 	return lzfs_xattr_get(inode, name, buffer, size, 0);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+	return lzfs_xattr_get(dentry->d_inode, name, buffer, size, 0);
+#endif
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 static int      
 lzfs_xattr_user_set(struct inode *inode, const char *name,
 			const void *value, size_t size, int flags)
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+static int
+lzfs_xattr_user_set(struct dentry *dentry, const char *name,
+			const void *value, size_t size, int flags, int type)
+#endif
 {               
 
 	vnode_t *vp;
@@ -45,8 +60,11 @@ lzfs_xattr_user_set(struct inode *inode, const char *name,
 		.uio_limit   = MAXOFFSET_T,
 		.uio_segflg  = UIO_SYSSPACE,
 	};
-
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 	dvp = LZFS_ITOV(inode);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+	dvp = LZFS_ITOV(dentry->d_inode);
+#endif
 	err = zfs_lookup(dvp, NULL, &vp, NULL, LOOKUP_XATTR | CREATE_XATTR_DIR,
 			 NULL, (struct cred *) cred, NULL, NULL, NULL);
 	if(err) {
@@ -83,9 +101,15 @@ lzfs_xattr_user_set(struct inode *inode, const char *name,
 	return err;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 static size_t
 lzfs_xattr_user_list(struct inode *inode, char *list, size_t list_size,
 			const char *name, size_t name_len)
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+static size_t
+lzfs_xattr_user_list(struct dentry *dentry, char *list, size_t list_size,
+			const char *name, size_t name_len, int type)
+#endif
 {
 	const size_t total_len = name_len + 1;
 
@@ -103,4 +127,3 @@ struct xattr_handler lzfs_xattr_user_handler = {
 	.get    = lzfs_xattr_user_get,
 	.set    = lzfs_xattr_user_set,
 };
-#endif

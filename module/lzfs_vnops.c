@@ -1227,12 +1227,10 @@ const struct inode_operations zfs_inode_operations = {
 	.rename         = lzfs_vnop_rename,
 	.setattr        = lzfs_vnop_setattr,
 	.permission     = lzfs_vnop_permission,
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 	.setxattr       = generic_setxattr,
 	.getxattr       = generic_getxattr,
 	.listxattr      = lzfs_listxattr,
 	.removexattr    = lzfs_removexattr,
-#endif
 };
 
 const struct file_operations zfs_file_operations = {

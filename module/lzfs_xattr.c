@@ -1,5 +1,4 @@
 #include <linux/version.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 #include <linux/fs.h>
 #include <sys/vnode.h>
 #include <sys/vfs.h>
@@ -72,11 +71,21 @@ lzfs_xattr_get(struct inode *inode, const char *name,
 			(handler) != NULL;		\
 			(handler) = *(handlers)++)
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 static inline struct xattr_handler *
 find_xattr_handler_prefix(struct xattr_handler **handlers,
-                           const char *name)
+				const char *name)
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+static inline const struct xattr_handler *
+find_xattr_handler_prefix(const struct xattr_handler **handlers,
+				const char *name)
+#endif
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 	struct xattr_handler *ea_handler;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+	const struct xattr_handler *ea_handler;
+#endif
 
 	if (!handlers) {
 		return NULL;
@@ -93,7 +102,11 @@ struct listxattr_buf {
 	size_t size;
 	size_t pos;
 	char *buf;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 	struct inode *inode;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+	struct dentry *dentry;
+#endif
 };
 
 static int listxattr_filler(void *buf, const char *name, int namelen,
@@ -104,20 +117,41 @@ static int listxattr_filler(void *buf, const char *name, int namelen,
 	
 	if (name[0] != '.' ||
 		(namelen != 1 && (name[1] != '.' || namelen != 2))) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 			struct xattr_handler *handler;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+			const struct xattr_handler *handler;
+#endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 			handler = find_xattr_handler_prefix(
 					b->inode->i_sb->s_xattr,
 					name);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+			handler = find_xattr_handler_prefix(
+                                        b->dentry->d_sb->s_xattr,
+                                        name);
+#endif
 			if (!handler)
 				return 0;
 			if (b->buf) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 				size = handler->list(b->inode, b->buf + b->pos,
 						b->size, name, namelen);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+				size = handler->list(b->dentry, b->buf + b->pos,
+                                                b->size, name, namelen,
+						handler->flags);
+#endif
 				if (size > b->size)
 					return -ERANGE;
 			} else {
-				size = handler->list(b->inode, NULL, 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)				
+					size = handler->list(b->inode, NULL, 
 						0, name, namelen);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+					size = handler->list(b->dentry, NULL,
+                                                0, name, namelen, handler->flags);
+#endif
 			}
 	}
 	b->pos += size;
@@ -134,7 +168,11 @@ lzfs_listxattr(struct dentry *dentry, char *buffer, size_t size)
 	loff_t pos = 0;
 
 	struct listxattr_buf buf = {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 		.inode = dentry->d_inode,
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+		.dentry = dentry,
+#endif
 		.buf = buffer,
 		.size = buffer ? size : 0,
 	};
@@ -162,18 +200,29 @@ int
 lzfs_removexattr(struct dentry *dentry, const char *name)
 {
 	struct inode *inode = dentry->d_inode;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)	
 	struct xattr_handler *handler;
-
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+	const struct xattr_handler *handler;
+#endif
 	handler = find_xattr_handler_prefix(inode->i_sb->s_xattr, name);
 
 	if (!handler)
 		return -EOPNOTSUPP;
-
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 	return handler->set(inode, name, NULL, 0, XATTR_REPLACE);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+	return handler->set(dentry, name, NULL, 0, XATTR_REPLACE, 
+				handler->flags);
+#endif
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 struct xattr_handler *lzfs_xattr_handlers[] = {
-        &lzfs_xattr_user_handler,
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+const struct xattr_handler *lzfs_xattr_handlers[] = {
+#endif
+	&lzfs_xattr_user_handler,
 #ifdef HAVE_ZPL	
 	&lzfs_xattr_trusted_handler,	// TODO
 	&lzfs_xattr_acl_access_handler,	// TODO
@@ -182,4 +231,3 @@ struct xattr_handler *lzfs_xattr_handlers[] = {
 	&lzfs_xattr_security_handler,
         NULL
 };
-#endif

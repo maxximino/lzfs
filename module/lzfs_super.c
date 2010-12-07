@@ -237,9 +237,7 @@ lzfs_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_time_gran	  =	1;
 	sb->s_flags	  =	MS_ACTIVE;
 	sb->s_export_op	  =     &zfs_export_ops;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 	sb->s_xattr       =     lzfs_xattr_handlers;
-#endif
 	error = zfs_domount(vfsp, data);
 	if (error) {
 		printk(KERN_WARNING "mount failed to open the pool!!\n");
