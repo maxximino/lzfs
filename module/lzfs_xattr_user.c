@@ -1,3 +1,5 @@
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 #include <linux/fs.h>
 #include <sys/vnode.h>
 #include <sys/vfs.h>
@@ -101,4 +103,4 @@ struct xattr_handler lzfs_xattr_user_handler = {
 	.get    = lzfs_xattr_user_get,
 	.set    = lzfs_xattr_user_set,
 };
-
+#endif
