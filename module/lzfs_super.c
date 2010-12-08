@@ -37,10 +37,10 @@
 #include <sys/vfs.h>
 #include <sys/vnode.h>
 #include <spl-debug.h>
-#include <sys/lzfs_inode.h>
-#include <sys/lzfs_snap.h>
-#include <sys/lzfs_exportfs.h>
-#include <sys/lzfs_xattr.h>
+#include <lzfs_inode.h>
+#include <lzfs_snap.h>
+#include <lzfs_exportfs.h>
+#include <lzfs_xattr.h>
 #include <linux/version.h>
 #include <sys/mntent.h>
 #include <spl_config.h>

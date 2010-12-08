@@ -4,8 +4,8 @@
 #include <sys/vfs.h>
 #include <sys/sysmacros.h>
 #include <sys/types.h>
-#include <sys/lzfs_inode.h>
-#include <sys/lzfs_xattr.h>
+#include <lzfs_inode.h>
+#include <lzfs_xattr.h>
 #include <linux/xattr.h>
 #include <linux/security.h>
 

@@ -26,10 +26,10 @@
 #include <spl-debug.h>
 #include <sys/tsd_hashtable.h>
 #include <linux/writeback.h>
-#include <sys/lzfs_snap.h>
+#include <lzfs_snap.h>
 #include <linux/fsync_compat.h>
 #include <linux/xattr.h>
-#include <sys/lzfs_xattr.h>
+#include <lzfs_xattr.h>
 
 #ifdef DEBUG_SUBSYSTEM
 #undef DEBUG_SUBSYSTEM

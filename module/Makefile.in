@@ -3,7 +3,8 @@
 MODULES := lzfs
 EXTRA_CFLAGS = @KERNELCPPFLAGS@
 EXTRA_CFLAGS += -include @SPL_OBJ@/spl_config.h
-
+#EXTRA_CFLAGS += -I/home/kqinfo/git/EA-on-merge-latest/lzfs/include
+EXTRA_CFLAGS += -I@abs_top_srcdir@/include
 # lzfs module
 obj-m := lzfs.o
 

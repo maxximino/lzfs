@@ -23,7 +23,7 @@
 
 #include <linux/fs.h>
 #include <sys/vfs.h>
-#include <sys/lzfs_exportfs.h>
+#include <lzfs_exportfs.h>
 #include <sys/tsd_wrapper.h>
 #include <sys/vnode.h>
 #include <spl-debug.h>

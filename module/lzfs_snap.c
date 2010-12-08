@@ -24,10 +24,10 @@
 #include <linux/fs.h>
 #include <sys/vnode.h>
 #include <sys/vfs.h>
-#include <sys/lzfs_snap.h>
+#include <lzfs_snap.h>
 #include <sys/sysmacros.h>
 #include <sys/types.h>
-#include <sys/lzfs_inode.h>
+#include <lzfs_inode.h>
 extern void zfs_fs_name_fn(void *, char *);
 extern int zfs_snapshot_list_next(void *, char *, uint64_t *,
 				uint64_t *, boolean_t *);
