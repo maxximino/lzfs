@@ -140,7 +140,9 @@ lzfs_init_security(struct dentry *dentry, struct inode *dir)
 		return err;
 	}
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
-	err = lzfs_xattr_security_set(dentry, name, value, len, 0);
+	err = lzfs_xattr_security_set(dentry->d_inode, name, value, len, 0);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+	err = lzfs_xattr_security_set(dentry, name, value, len, 0, 0);
 #endif
 	kfree(name);
 	kfree(value);
