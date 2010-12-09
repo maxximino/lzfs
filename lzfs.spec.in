@@ -177,7 +177,7 @@ License:         GPL
 URL:             KQ
 BuildRoot:       %{_tmppath}/%{name}-%{version}-%{release}-%(%{__id} -un)
 Source:          %{name}-%{version}.tar.gz
-Requires:        %{requires}
+Requires:        %{requires} spl zfs
 
 
 %description
