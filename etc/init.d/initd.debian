@@ -31,6 +31,7 @@ start () {
 }
 
 stop () {
+	zfs umount -a
 	modprobe -r lzfs
 	modprobe -r zfs
 	modprobe -r zcommon

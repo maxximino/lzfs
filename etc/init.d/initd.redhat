@@ -14,7 +14,7 @@
 # Source function library.
 . /etc/rc.d/init.d/functions
 PATH=$PATH:/usr/local/sbin
-exprort PATH
+export PATH
 
 RETVAL=0
 exec=/usr/sbin/zfsload
@@ -30,6 +30,7 @@ start () {
 }
 
 stop () {
+	zfs umount -a
 	modprobe -r lzfs
 	modprobe -r zfs
 	modprobe -r zcommon
