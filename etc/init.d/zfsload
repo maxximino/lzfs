@@ -13,6 +13,8 @@
 
 # Source function library.
 . /etc/rc.d/init.d/functions
+PATH=$PATH:/usr/local/sbin
+exprort PATH
 
 RETVAL=0
 exec=/usr/sbin/zfsload
@@ -35,7 +37,6 @@ stop () {
 	modprobe -r znvpair
 	modprobe -r zavl
 	modprobe -r spl
-	modprobe -r zlib_deflate
         #killproc $prog
         RETVAL=$?
         echo
