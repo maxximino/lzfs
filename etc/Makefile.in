@@ -43,3 +43,10 @@ uninstall_initd_redhat:
 uninstall_initd_debian:
 	service zfsload stop 
 	/usr/sbin/update-rc.d -f zfsload remove 
+
+clean:
+
+distclean:
+
+check:
+
