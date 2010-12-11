@@ -25,9 +25,8 @@ lockfile=/var/lock/subsys/$prog
 
 start () {
         modprobe lzfs
-        zpool import -a
-	zfs mount -a
-        return $RETVAL
+        zfs mount -a
+	return $RETVAL
 }
 
 stop () {
