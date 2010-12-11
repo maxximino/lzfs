@@ -181,6 +181,9 @@ lzfs_listxattr(struct dentry *dentry, char *buffer, size_t size)
 	err = zfs_lookup(dvp, NULL, &vp, NULL, LOOKUP_XATTR, NULL,
 			(struct cred *) cred, NULL, NULL, NULL);
 	if(err) {
+		if(err == ENOENT) {
+			err = 0;
+		}
 		return -err;
 	}
 	ASSERT(vp != NULL);
