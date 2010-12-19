@@ -61,9 +61,10 @@ extern void lzfs_zfsctl_destroy(vfs_t *);
 
 static void lzfs_delete_vnode(struct inode *inode)
 {
-	truncate_inode_pages(&inode->i_data, 0);
+	loff_t oldsize = i_size_read(inode);
+	i_size_write(inode, 0);
+	truncate_pagecache(inode, oldsize, 0);
 	clear_inode(inode);
-	inode->i_size = 0; 
 }
 
 static void 

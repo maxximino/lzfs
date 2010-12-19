@@ -798,6 +798,10 @@ lzfs_vnop_read (struct file *filep, char __user *buf, size_t len, loff_t *ppos)
 			}
 		}
 		nr = nr - offset;
+
+        if (mapping_writably_mapped(mapping))
+			flush_dcache_page(page);
+
 		mark_page_accessed(page);
 		prev_index = index;
 
@@ -916,54 +920,48 @@ ssize_t
 lzfs_vnop_write (struct file *filep, const char __user *buf, size_t len, 
 		 loff_t *ppos)
 {
-	int err;
 	vnode_t *vp = NULL;
-	ssize_t i_size;
+	ssize_t rc;
 
 	/* PAGE CACHE SUPPORT VARIABLES */
 	struct address_space *mapping = filep->f_mapping;
 	struct inode *inode = mapping->host;
 	pgoff_t index;
-	unsigned long written = 0;
+	unsigned long written;
 	unsigned long offset;
 
 	const char *user_buf = buf;
 
-	/* pos_append would be equal to ppos, but if file is opened 
-	 * with O_APPEND flag pos_append would be assigned size of inode */
-	loff_t pos_append = 0;
+	loff_t pos_append;
 
 	SENTRY;
-
 	vp = LZFS_ITOV(inode);
 
+	rc = lzfs_write(vp, filep->f_flags, buf, len, *ppos, UIO_USERSPACE);
+	if (unlikely(rc < 0)) {
+		tsd_exit();
+		SEXIT;
+		return rc;
+	}
+	pos_append = *ppos;
+	*ppos += rc;
+	
 	if (likely(!(vp->v_flag & VMMAPPED))) {
 		/* file is not memory mmapped, pass write directly to ZFS */
-		ssize_t rc; 
-		rc = lzfs_write(vp, filep->f_flags, buf, len, *ppos, UIO_USERSPACE);
-		if (likely(rc > 0))
-			*ppos += rc;
 		tsd_exit();
 		SEXIT;
 		return rc;
 	}
 
-	i_size = i_size_read(inode);
-
-	pos_append = *ppos;
-	if (filep->f_flags & FAPPEND) {
-		/* file is opened with the O_APPEND flag */
-		pos_append = i_size;
-	}
-
 	index = pos_append >> PAGE_CACHE_SHIFT;
 	offset = pos_append & ~PAGE_CACHE_MASK;
+	written = 0;
 
 	while (1) {
 		struct page *page = NULL;
 		char *page_buf;
 		ssize_t size;
-
+		ssize_t tmp;
 
 		if (written >= len)
 			break;
@@ -976,78 +974,61 @@ lzfs_vnop_write (struct file *filep, const char __user *buf, size_t len,
 		page = find_lock_page(mapping, index);
 		if (likely(!page)) {
 #if 0
-			printk ("%s: Page not cached. ppos=%llu, pos_append=%llu, offset=%ld, len=%ld, size=%ld\n", 
-					__FUNCTION__, *ppos, pos_append, offset, len, size);
+			printk ("%s: Page not cached. ppos=%llu, pos_append=%llu, offset=%ld, "
+					"len=%ld, size=%ld\n", __FUNCTION__, *ppos, pos_append, offset, 
+					len, size);
 #endif
 			goto no_cached_page;
 		}
 #if 0
-		printk ("%s: Page cached. ppos=%llu, pos_append=%llu, offset=%ld, len=%ld, size=%ld\n", 
-					__FUNCTION__, *ppos, pos_append, offset, len, size);
+		printk ("%s: Page cached. ppos=%llu, pos_append=%llu, offset=%ld, len=%ld, "
+				"size=%ld\n", __FUNCTION__, *ppos, pos_append, offset, len, size);
 #endif
+
+		if (mapping_writably_mapped(mapping))
+			flush_dcache_page(page);
 
 		pagefault_disable();
 
 		/* copy the data */
 		BUG_ON(!in_atomic());
 		page_buf = kmap_atomic(page, KM_USER0);
-		if (copy_from_user(page_buf+offset, user_buf, size)) {
-			kunmap(page);
-			unlock_page(page);
-			err = -EFAULT;
-			goto out_error;
-		}
+		tmp = __copy_from_user_inatomic(page_buf + offset, user_buf, size);
 		kunmap_atomic(page_buf, KM_USER0);
 		pagefault_enable();
-
 		flush_dcache_page(page);
+		if (tmp) {
+			unlock_page(page);
+			tsd_exit();
+			SEXIT;
+			return -EFAULT;
+		}
+
 		mark_page_accessed(page);
 
-		/* do i need to modify the inode size */
 		SetPageUptodate(page);
 		ClearPageError(page);
 //		set_page_dirty(page);
+		/* data is written to disk and then a page is modified 
+		   i.e. page is not dirty */
+		page_clear_dirty(page);
 		unlock_page(page);
 		page_cache_release(page);
-		zfs_file_modified(vp);
+//		zfs_file_modified(vp);
 
-		balance_dirty_pages_ratelimited(mapping);
-
-		user_buf += size;
-		written  += size;
-		*ppos    += size;
-		pos_append += size;
-		index    =  pos_append >> PAGE_CACHE_SHIFT;
-		if (*ppos != pos_append) {
-			/* file is opened with the O_APPEND flag */
-			BUG_ON(!(filep->f_flags & FAPPEND));
-			i_size_write(inode, i_size + size);
-		}
-		offset   =  0;
-		continue;
+//		balance_dirty_pages_ratelimited(mapping);
 
 no_cached_page:
-		size = lzfs_write(vp, filep->f_flags, user_buf, size, *ppos, UIO_USERSPACE);
-		if (unlikely(size < 0)) {
-			err = size;
-			goto out_error;
-		}
-
-		*ppos      += size;
+		user_buf += size;
+		written  += size;
 		pos_append += size;
-		user_buf   += size;
-		written    += size;
-		index       = *ppos >> PAGE_CACHE_SHIFT;
-		offset      =  0;
+		index    =  pos_append >> PAGE_CACHE_SHIFT;
+		offset   =  0;
 	}
 
 	tsd_exit();
 	SEXIT;
-	return ((ssize_t) written);
-out_error:
-	tsd_exit();
-	SEXIT;
-	return err;
+	return rc;
 }
 
 /* 
@@ -1087,7 +1068,9 @@ int lzfs_file_mmap(struct file * file, struct vm_area_struct * vma)
 	if (rc < 0)
 		return rc;
 
+	mutex_enter(&vp->v_lock);
 	vp->v_flag |= VMMAPPED;
+	mutex_exit(&vp->v_lock);
 	return rc;
 }
 
@@ -1262,8 +1245,6 @@ static int lzfs_readpage(struct file *file, struct page *page)
     vnode_t *vp         = NULL;
     unsigned long fillsize = 0;
 	ssize_t rc;
-    struct iovec iov;
-    uio_t uio;
 
     BUG_ON(!PageLocked(page));
 //    printk(KERN_ERR "%s: ==>\n", __FUNCTION__);
@@ -1285,9 +1266,6 @@ static int lzfs_readpage(struct file *file, struct page *page)
         err = -ENOMEM;
         goto out;
     }
-
-    bzero(&iov, sizeof(struct iovec));
-    bzero(&uio, sizeof(uio_t));
 
     if (offset < i_size) {
         i_size -= offset;
@@ -1379,7 +1357,7 @@ static int lzfs_writepage(struct page *page, struct writeback_control *wbc)
 	}
     kunmap(page);
 out:
-    //	page_clear_dirty(page);
+    page_clear_dirty(page);
     unlock_page(page);
 //    printk(KERN_ERR "%s: <==\n", __FUNCTION__);
     return err;
