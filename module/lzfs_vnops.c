@@ -988,14 +988,14 @@ lzfs_vnop_write (struct file *filep, const char __user *buf, size_t len,
 		if (mapping_writably_mapped(mapping))
 			flush_dcache_page(page);
 
-		pagefault_disable();
+//		pagefault_disable();
 
 		/* copy the data */
-		BUG_ON(!in_atomic());
+//		BUG_ON(!in_atomic());
 		page_buf = kmap_atomic(page, KM_USER0);
 		tmp = __copy_from_user_inatomic(page_buf + offset, user_buf, size);
 		kunmap_atomic(page_buf, KM_USER0);
-		pagefault_enable();
+//		pagefault_enable();
 		flush_dcache_page(page);
 		if (tmp) {
 			unlock_page(page);
