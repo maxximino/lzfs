@@ -99,8 +99,13 @@ lzfs_clear_vnode(struct inode *inode)
 static void
 lzfs_put_super(struct super_block *sb)
 {
+	struct dentry *mntpnt = ((vfs_t *)sb->s_fs_info)->vfs_mntpt;
+
 	SENTRY;
 	zfs_umount(sb->s_fs_info, 0, NULL);
+	if(((vfs_t *)sb->s_fs_info)->is_snap) {
+		d_invalidate(mntpnt);
+	}
 	kfree(sb->s_fs_info);
 	SEXIT;
 }

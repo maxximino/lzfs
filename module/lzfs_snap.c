@@ -87,7 +87,6 @@ zfsctl_lookup(struct inode *dir,struct dentry *dentry, struct nameidata *nd)
 	if (strcmp(dentry->d_name.name, ZFS_SNAPDIR_NAME) == 0) {
 		inode = ilookup(dir->i_sb, LZFS_ZFSCTL_INO_SNAPDIR);
 		if(!inode) {
-			printk("snapshot dir inode not found");
 			return NULL;
 		}
 		return d_splice_alias(inode, dentry);
@@ -173,6 +172,7 @@ snap_mountpoint_follow_link(struct dentry *dentry, struct nameidata *nd)
 	snapname = strcat(snapname, "@");
 	snapname = strcat(snapname, dentry->d_name.name);
 	mnt = vfs_kern_mount(&lzfs_fs_type, 0, snapname, NULL);
+	((vfs_t *)mnt->mnt_sb->s_fs_info)->vfs_mntpt = dentry;
 	mntget(mnt);
 	rc = PTR_ERR(mnt);
 	if (IS_ERR(mnt)) {
