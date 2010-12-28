@@ -26,7 +26,7 @@ lzfs_xattr_get(struct inode *inode, const char *name,
 	err = zfs_lookup(dvp, NULL, &vp, NULL, LOOKUP_XATTR, NULL,
 			(struct cred *) cred, NULL, NULL, NULL);
 	if(err) {
-		return -err;
+		return -ENODATA;
 	}
 	ASSERT(vp != NULL);
 	if(index == 0) {
