@@ -24,7 +24,7 @@
 #include <linux/fs.h>
 #include <sys/vnode.h>
 #include <spl-debug.h>
-#include <sys/tsd_hashtable.h>
+#include <sys/tsd.h>
 #include <linux/writeback.h>
 #include <lzfs_snap.h>
 #include <linux/fsync_compat.h>
