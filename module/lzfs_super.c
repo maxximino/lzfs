@@ -59,15 +59,27 @@ extern int zfs_statvfs(vfs_t *vfsp, struct statvfs64 *statp);
 extern void lzfs_zfsctl_create(vfs_t *);
 extern void lzfs_zfsctl_destroy(vfs_t *);
 
+/* TODO
+ * Following checking needs part of lzfs/spl configuration step.
+ */
 static void lzfs_delete_vnode(struct inode *inode)
 {
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,31)
 	loff_t oldsize = i_size_read(inode);
+
 	i_size_write(inode, 0);
 	truncate_pagecache(inode, oldsize, 0);
 	clear_inode(inode);
+#else
+        struct address_space *mapping = inode->i_mapping;
+
+        unmap_mapping_range(mapping, new + PAGE_SIZE - 1, 0, 1);
+        truncate_inode_pages(mapping, new);
+        unmap_mapping_range(mapping, new + PAGE_SIZE - 1, 0, 1);
+#endif
 }
 
-static void 
+static void
 lzfs_clear_vnode(struct inode *inode)
 {
 	vnode_t		*vp;
