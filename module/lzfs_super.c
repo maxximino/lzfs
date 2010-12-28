@@ -72,6 +72,7 @@ static void lzfs_delete_vnode(struct inode *inode)
 	clear_inode(inode);
 #else
         struct address_space *mapping = inode->i_mapping;
+        loff_t new = 0;
 
         unmap_mapping_range(mapping, new + PAGE_SIZE - 1, 0, 1);
         truncate_inode_pages(mapping, new);
