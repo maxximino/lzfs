@@ -28,6 +28,17 @@
 #include <sys/sysmacros.h>
 #include <sys/types.h>
 #include <lzfs_inode.h>
+#include <spl-debug.h>
+
+#ifdef SS_DEBUG_SUBSYS
+#undef SS_DEBUG_SUBSYS
+#endif
+
+/*
+ *  Log LZFS debug messages as the spl SS_USER2 subsystem.
+ */
+#define SS_DEBUG_SUBSYS SS_USER2
+
 extern void zfs_fs_name_fn(void *, char *);
 extern int zfs_snapshot_list_next(void *, char *, uint64_t *,
 				uint64_t *, boolean_t *);

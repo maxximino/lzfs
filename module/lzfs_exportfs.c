@@ -28,6 +28,15 @@
 #include <sys/vnode.h>
 #include <spl-debug.h>
 
+#ifdef SS_DEBUG_SUBSYS
+#undef SS_DEBUG_SUBSYS
+#endif
+
+/*
+ *  Log LZFS debug messages as the spl SS_USER2 subsystem.
+ */
+#define SS_DEBUG_SUBSYS SS_USER2
+
 extern int zfs_fid(vnode_t *vp, fid_t *fidp, caller_context_t *ct);
 extern int zfs_vget(vfs_t *vfsp, vnode_t **vpp, fid_t *fidp);
 extern int zfs_lookup(vnode_t *dvp, char *nm, vnode_t **vpp, struct pathname *pnp,

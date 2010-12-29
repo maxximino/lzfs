@@ -45,11 +45,14 @@
 #include <sys/mntent.h>
 #include <spl_config.h>
 
-#ifdef DEBUG_SUBSYSTEM
-#undef DEBUG_SUBSYSTEM
+#ifdef SS_DEBUG_SUBSYS
+#undef SS_DEBUG_SUBSYS
 #endif
 
-#define DEBUG_SUBSYSTEM S_LZFS
+/*
+ *  Log LZFS debug messages as the spl SS_USER2 subsystem.
+ */
+#define SS_DEBUG_SUBSYS SS_USER2
 
 /* symbol exported by zfs module */
 extern int zfs_domount(vfs_t *vfsp, char *data);

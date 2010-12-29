@@ -7,6 +7,16 @@
 #include <lzfs_inode.h>
 #include <lzfs_xattr.h>
 #include <linux/xattr.h>
+#include <spl-debug.h>
+
+#ifdef SS_DEBUG_SUBSYS
+#undef SS_DEBUG_SUBSYS
+#endif
+
+/*
+ *  Log LZFS debug messages as the spl SS_USER2 subsystem.
+ */
+#define SS_DEBUG_SUBSYS SS_USER2
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 static int
