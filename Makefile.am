@@ -2,7 +2,7 @@ include $(top_srcdir)/config/rpm.am
 include ${top_srcdir}/config/deb.am
 include ${top_srcdir}/config/tgz.am
 
-USER_DIR = etc
+USER_DIR = etc include
 KERNEL_DIR = module
 SUBDIRS = $(KERNEL_DIR) $(USER_DIR)
 

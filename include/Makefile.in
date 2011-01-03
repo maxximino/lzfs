@@ -1,0 +1,12 @@
+all:
+install:
+
+clean:
+
+distclean:
+
+check: 
+
+distdir:
+	/bin/cp -R * $$distdir/$$subdir
+

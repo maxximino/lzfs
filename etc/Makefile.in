@@ -15,7 +15,7 @@ install_initd:
         fi
 
 install_initd_redhat:
-	$(INSTALL) -d $(initddir)
+	test -z "$(initddir)" || /bin/mkdir -p "$(DESTDIR)$(initddir)"	
 	$(INSTALL) -m 755 init.d/initd.redhat \
                 $(DESTDIR)$(initddir)/zfsload
 	/sbin/chkconfig --add zfsload
@@ -23,7 +23,7 @@ install_initd_redhat:
 
 
 install_initd_debian:
-	$(INSTALL) -d $(initddir)
+	test -z "$(initddir)" || /bin/mkdir -p "$(DESTDIR)$(initddir)"	
 	$(INSTALL) -m 755 init.d/initd.debian \
                 $(DESTDIR)$(initddir)/zfsload
 	/usr/sbin/update-rc.d zfsload defaults
@@ -50,3 +50,5 @@ distclean:
 
 check:
 
+distdir: 
+	find ./ | xargs /bin/cp -rt $$distdir/$$subdir;
