@@ -17,15 +17,16 @@ install_initd:
 install_initd_redhat:
 	test -z "$(initddir)" || /bin/mkdir -p "$(DESTDIR)$(initddir)"	
 	$(INSTALL) -m 755 init.d/initd.redhat \
-                $(DESTDIR)$(initddir)/zfsload
-	/sbin/chkconfig --add zfsload
-	service zfsload start
-
+        $(DESTDIR)$(initddir)/zfsload
+	if [ -z $(DESTDIR) ]; then \
+		/sbin/chkconfig --add $(DESTDIR)$(initddir)/zfsload; \
+		service zfsload start; \
+	fi
 
 install_initd_debian:
 	test -z "$(initddir)" || /bin/mkdir -p "$(DESTDIR)$(initddir)"	
 	$(INSTALL) -m 755 init.d/initd.debian \
-                $(DESTDIR)$(initddir)/zfsload
+        $(DESTDIR)$(initddir)/zfsload
 	/usr/sbin/update-rc.d zfsload defaults
 	service zfsload start
 
