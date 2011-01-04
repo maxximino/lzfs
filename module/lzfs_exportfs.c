@@ -59,6 +59,12 @@ static int lzfs_encode_fh(struct dentry *dentry, u32 *fh, int *max_len, int conn
 		spin_unlock(&dentry->d_lock);
 		lfid_type = LZFS_FILEID_INO64_GEN_PARENT;
 	}
+        /* If inode number is -1 then we looking into .zfs(ZFS control
+         * directory). Traversing .zfs from the NFS is not supported yet.
+         */
+        if (inode->i_ino == -1) {
+            return 255;
+        }
 
 	vp = LZFS_ITOV(inode);
 	error = zfs_fid( vp, lzfid, 0);
