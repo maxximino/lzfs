@@ -1,0 +1,29 @@
+usrdir = /usr
+sbindir = $(usrdir)/sbin
+INSTALL = /usr/bin/install -c
+
+all:
+
+install: install_initd
+
+uninstall: uninstall_initd
+
+install_initd:
+	test -z "$(usrdir)" || /bin/mkdir -p "$(DESTDIR)$(sbindir)"
+	$(INSTALL) -m 755 sbin/zfs_manage.py \
+	$(DESTDIR)$(sbindir)/
+	$(INSTALL) -m 755 sbin/SystemReport.sh \
+	$(DESTDIR)$(sbindir)/
+
+uninstall_initd:
+	/bin/rm -f /usr/sbin/SystemReport.sh
+	/bin/rm -f /usr/sbin/zfs_manage.py
+
+clean:
+
+distclean:
+
+check:
+
+distdir:
+	find ./ | xargs /bin/cp -rt $$distdir/$$subdir;

@@ -37,6 +37,7 @@ AC_CONFIG_FILES([
 	module/Makefile
 	etc/Makefile
 	include/Makefile
+	usr/Makefile
 	lzfs.spec
 ])
 AC_OUTPUT

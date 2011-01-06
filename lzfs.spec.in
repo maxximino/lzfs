@@ -177,7 +177,7 @@ License:         GPL
 URL:             KQ
 BuildRoot:       %{_tmppath}/%{name}-%{version}-%{release}-%(%{__id} -un)
 Source:          %{name}-%{version}.tar.gz
-Requires:        %{requires} spl zfs
+Requires:        %{requires} spl zfs python-dmidecode SOAPpy
 
 
 %description
@@ -203,6 +203,10 @@ rm -rf $RPM_BUILD_ROOT
 /lib/modules/*
 %{_prefix}/src/* 
 %attr(0755,root,root) %{_sysconfdir}/init.d/zfsload
+/usr/sbin/zfs_manage.py
+/usr/sbin/SystemReport.sh
+/etc/zfs/zfs_config
+/etc/zfs/zfs_serial
 
 %post
 if [ -f /boot/System.map-%{kver} ]; then

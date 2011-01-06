@@ -41,9 +41,9 @@ DIST_COMMON = $(am__configure_deps) $(noinst_HEADERS) \
 	$(top_srcdir)/config/rpm.am $(top_srcdir)/configure \
 	$(top_srcdir)/etc/Makefile.in \
 	$(top_srcdir)/include/Makefile.in \
-	$(top_srcdir)/module/Makefile.in config/config.guess \
-	config/config.sub config/install-sh config/ltmain.sh \
-	config/missing install-sh ltmain.sh
+	$(top_srcdir)/module/Makefile.in $(top_srcdir)/usr/Makefile.in \
+	config/config.guess config/config.sub config/install-sh \
+	config/ltmain.sh config/missing install-sh ltmain.sh
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/lzfs-build.m4 \
@@ -55,7 +55,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = lzfs_config.h
 CONFIG_CLEAN_FILES = module/Makefile etc/Makefile include/Makefile \
-	lzfs.spec
+	usr/Makefile lzfs.spec
 CONFIG_CLEAN_VPATH_FILES =
 SOURCES =
 DIST_SOURCES =
@@ -249,7 +249,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-USER_DIR = etc include
+USER_DIR = etc include usr
 KERNEL_DIR = module
 SUBDIRS = $(KERNEL_DIR) $(USER_DIR)
 AUTOMAKE_OPTIONS = foreign dist-zip
@@ -316,6 +316,8 @@ module/Makefile: $(top_builddir)/config.status $(top_srcdir)/module/Makefile.in
 etc/Makefile: $(top_builddir)/config.status $(top_srcdir)/etc/Makefile.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 include/Makefile: $(top_builddir)/config.status $(top_srcdir)/include/Makefile.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+usr/Makefile: $(top_builddir)/config.status $(top_srcdir)/usr/Makefile.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 lzfs.spec: $(top_builddir)/config.status $(srcdir)/lzfs.spec.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@

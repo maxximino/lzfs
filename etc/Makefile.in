@@ -1,11 +1,12 @@
 
 etcdir = /etc
 initddir = $(etcdir)/init.d
+zfsdir = $(etcdir)/zfs
 INSTALL = /usr/bin/install -c
 
 all: 
-install: install_initd
-uninstall: uninstall_initd
+install: install_initd install_zfs
+uninstall: uninstall_initd uninstall_zfs
 
 install_initd: 
 	if [ -f /etc/debian_version ]; then \
@@ -44,6 +45,17 @@ uninstall_initd_redhat:
 uninstall_initd_debian:
 	service zfsload stop 
 	/usr/sbin/update-rc.d -f zfsload remove 
+
+install_zfs:
+	test -z "$(zfsdir)" || /bin/mkdir -p "$(DESTDIR)$(zfsdir)"
+	$(INSTALL) -m 755 zfs/zfs_config \
+	$(DESTDIR)$(zfsdir)/
+	$(INSTALL) -m 755 zfs/zfs_serial \
+	$(DESTDIR)$(zfsdir)/
+
+uninstall_zfs:
+	/bin/rm -f /etc/zfs/zfs_config
+	/bin/rm -f /etc/zfs/zfs_serial
 
 clean:
 
