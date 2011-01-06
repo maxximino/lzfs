@@ -1014,7 +1014,7 @@ lzfs_vnop_write (struct file *filep, const char __user *buf, size_t len,
 //		set_page_dirty(page);
 		/* data is written to disk and then a page is modified 
 		   i.e. page is not dirty */
-		page_clear_dirty(page);
+//		page_clear_dirty(page);
 		unlock_page(page);
 		page_cache_release(page);
 //		zfs_file_modified(vp);
@@ -1360,7 +1360,7 @@ static int lzfs_writepage(struct page *page, struct writeback_control *wbc)
 	}
     kunmap(page);
 out:
-    page_clear_dirty(page);
+//    page_clear_dirty(page);
     unlock_page(page);
 //    printk(KERN_ERR "%s: <==\n", __FUNCTION__);
     return err;
