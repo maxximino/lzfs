@@ -106,9 +106,7 @@ lzfs_clear_vnode(struct inode *inode)
 	if(inode->i_ino != LZFS_ZFSCTL_INO_ROOT 
 		&& inode->i_ino != LZFS_ZFSCTL_INO_SNAPDIR
 		&& inode->i_private == NULL ) { 
-			if(!((vfs_t *)inode->i_sb->s_fs_info)->is_snap) {
-				zfs_inactive(vp, NULL, NULL);
-			}
+			zfs_inactive(vp, NULL, NULL);
 	}
 	vp->v_data = NULL;
 	SEXIT;
