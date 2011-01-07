@@ -173,11 +173,11 @@ snap_mountpoint_follow_link(struct dentry *dentry, struct nameidata *nd)
 	dir_vp = LZFS_ITOV(dentry->d_parent->d_inode);
 	vfsp = dir_vp->v_vfsp;
 	ASSERT(vfsp);
-	zfs_fs_name = kmem_alloc(MAXNAMELEN, KM_SLEEP);
+	zfs_fs_name = kzalloc(MAXNAMELEN, KM_SLEEP);
 	dput(nd->path.dentry);
 	nd->path.dentry = dget(dentry);
 	zfs_fs_name_fn(vfsp->vfs_data, zfs_fs_name);
-	snapname = kmem_alloc(strlen(zfs_fs_name) +
+	snapname = kzalloc(strlen(zfs_fs_name) +
 			strlen(dentry->d_name.name) + 2, KM_SLEEP);
 	snapname = strncpy(snapname, zfs_fs_name, strlen(zfs_fs_name) + 1);
 	snapname = strcat(snapname, "@");
