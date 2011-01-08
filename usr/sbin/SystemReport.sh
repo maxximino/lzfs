@@ -22,7 +22,7 @@ function startup {
 
 function cleanup {
     cd $BASE
-    tar -Pczf ./SysReport.tar.gz  ./SysReport/
+    tar -Pczf /tmp/SysReport.tar.gz  ./SysReport/
     rm -rf  ./SysReport/
 }
 
@@ -877,7 +877,7 @@ cleanup
 
 function Fedora {
  startup
- sysreport > $BASE/sysreport.log
+ sosreport > $BASE/sosreport.log
  cleanup
  return $?
 }

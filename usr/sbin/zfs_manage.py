@@ -15,8 +15,8 @@ import xml.etree.cElementTree as ElementTree
 # test argument
 #args = '-u myasduser --user=masdyuser -p mypaadfss --password=mypaasdfss -k serasdasdialkey --key=serasdfialkey -s myservasdfer --server=masdfyserver --unregister --help'.split()
 
-ZFS_USER_CONFIG = '/etc/zfs/zfs_config'
 ZFS_SERIAL      = '/etc/zfs/zfs_serial'
+ZFS_CONFIG      = '/etc/zfs/zfs_config'
 
 class XmlDictConfig(dict):
     def __init__(self, aDict):
@@ -168,19 +168,26 @@ def get_smbios():
             'smbios.system.product': get_dmi_data('/dmidecode/SystemInfo/ProductName'),
         }
 
-
+def usage():
+        print "\nUsage is:\n "
+        print sys.argv[0] + ' -u <username> --user=<username> -p <password> --password=<password> -k <serialkey> --key=<serialkey> -s <server> --server=<server> -o <operation> --operation=<operation> --help --dumpxml'
+        print "\n<operation> => register , unregister, support (default is register)\n"
+        print "Mandatory field(s)* (always)                 : user, password"
+        print "Mandatory field(s)* (first time registration) : key\n"
+        sys.exit(-1)
+ 
 
 def main():
+    if len(sys.argv) == 1 :
+        usage()
+
     index = -1
     try :
         index = sys.argv.index("--help")
     except:
         print
     if index != -1:
-        print "Usage is: "
-        print sys.argv[0] + ' -u <username> --user=<username> -p <password> --password=<oassword> -k <serialkey> --key=<serialkey> -s <server> --server=<server> -o <operation> --operation=<operation> --help --dumpxml'
-        print "<operation> => register , unregister, support (default is register)"
-        sys.exit(0)
+        usage()
 
     zfs_config     = {"user":"",
                       "password":"",
@@ -196,32 +203,48 @@ def main():
                       "-o":"operation","--operation":"operation",
                       "--help":"help",
                       "--dumpxml":"dumpxml"}
-
-    # get default configurations
-    sdata=""
+ 
+    # get default serial
     try:
-        fd = open(ZFS_USER_CONFIG)
-        sdata=fd.read().split()
-        if sdata!="":
-            for i in sdata:
-                try:
-                    splitData = i.split('=')
-                    zfs_config[splitData[0]] = splitData[1]
-                except:
-                    print "No such confituration Data : " + str(splitData)
+        fd = open(ZFS_SERIAL)
+        zfs_config['key'] = fd.read()
+        fd.close()
     except:
-        print "No configuration file availabel"
+        print
 
-    optlist, args = getopt.gnu_getopt(sys.argv, 'du:p:k:s:o:n:',["user=", "password=", "key=", "server=", "operation=","unregister", "help","dumpxml"])
+    optlist, args = getopt.gnu_getopt(sys.argv, 'dhu:p:k:s:o:n:',["user=", "password=", "key=", "server=", "operation=","unregister", "help","dumpxml"])
     for ele in optlist:
         zfs_config[opt_zfs_config[ele[0]]] = ele[1]
     # set md5 checksum of password as password
     zfs_config['password'] = md5.md5(zfs_config['password']).hexdigest()
-         
+
+    if zfs_config['user'] == '' or zfs_config['password'] == '' or zfs_config['key'] == '' :
+        print "Mandatory fields are must. Please provide mendatory information."
+        exit(-1)
+
     import SOAPpy
+
     ns = 'http://tempuri.org/KQInfotech'
-    #rl = 'http://test.aksharbharati.org/UserMachineDetailsService.asmx'
+    # default web service url ( currently using test url)
     url = 'http://192.168.1.175/ZFS.KQInfotech.WebService/UserMachineDetailsService.asmx'
+
+    # chekc for web service url in configuration file
+    confdict = {}
+    try :
+        fd = open(ZFS_CONFIG)
+        data = fd.read()
+        fd.close()
+        sdata = data.split()
+        for i in sdata:
+            tmp = i.split('=')
+            confdict[tmp[0]] =  tmp[1]
+    except :
+        print 
+    # override dafault web service url if its available and is not empty
+    if confdict.get('server') != None:
+        if confdict['server'] != '':
+            url = confdict['server']
+
     server = SOAPpy.SOAPProxy( url, namespace=ns )
     server.config.buildWithNamespacePrefix = 0
 
@@ -233,34 +256,28 @@ def main():
 
     if zfs_config['operation'] == 'support' :
         try:
-            fd = open(ZFS_SERIAL)
-            zfs_config['key'] = fd.read()
-            fd.close()
             # generate xml for zfs user registration info
             xmldata= XmlParser().dictToXml(zfs_config)
-            fd = open("dumpInfo.xml","w")
+            fd = open("/tmp/dumpInfo.xml","w")
             fd.write(xmldata)
             fd.close()
-            ret = commands.getstatusoutput("./SystemReport.sh")
+            ret = commands.getstatusoutput("SystemReport.sh")
             if ret[0] != 0 :
                 print "sysreport generation failed"
-            print "please send email to 'support@kqinfotech.com' with subject 'support' and attachment files 'dumpInfo.xml' and 'SysReport.tar.gz'"
+            print "please send email to 'support@kqinfotech.com' with subject 'support' and attachment files '/tmp/dumpInfo.xml' and '/tmp/SysReport.tar.gz'"
             return 
         except:
-            print "No serial available"
+            print "error occured : support ops"
             sys.exit(-1)
 
     if zfs_config['operation'] == 'unregister' :
         try:
-            fd = open(ZFS_SERIAL)
-            zfs_config['key'] = fd.read()
-            fd.close()
             # generate xml for zfs user registration info
             xmldata= XmlParser().dictToXml(zfs_config)
-            fd = open("dumpInfo.xml","w")
+            fd = open("/tmp/dumpInfo.xml","w")
             fd.write(xmldata)
             fd.close()
-            print "please send email to 'support@kqinfotech.com' with subject 'unregister' and attachment file 'dumpInfo.xml' "
+            print "please send email to 'support@kqinfotech.com' with subject 'unregister' and attachment file '/tmp/dumpInfo.xml' "
             return 
         except:
             print "No serial available(unregister)"
@@ -268,6 +285,8 @@ def main():
  
 
     xmldata= XmlParser().dictToXml(zfs_config)
+
+    # if dumpxml provided then dump xml
     index = -1
     try :
         index = sys.argv.index("--dumpxml")
@@ -275,22 +294,43 @@ def main():
         print
     if index != -1 :
         try:
-            fd = open("dumpInfo.xml","w")
+            fd = open("/tmp/dumpInfo.xml","w")
             fd.write(xmldata)
-            print 'xml data available ata dumpInfo.xml'
+            print 'xml data available at /tmp/dumpInfo.xml'
             fd.close()
         except:
-            print 'can`t open dumpInfo.xml for writing'
-    print server._sa( '%s/SendMachineDetails' %ns ).SendMachineDetails( inputxmlfile=xmldata )
-    
-    try:
-        fd = open(ZFS_SERIAL,"w")
-        fd.write(zfs_config['key'])
-        fd.close()
-    except:
-        print "can't open serial file"
+            print 'can`t open /tmp/dumpInfo.xml for writing'
+
+    # web service to register user
+    ret =  server._sa( '%s/SendMachineDetails' %ns ).SendMachineDetails( inputxmlfile=xmldata )
+    retEcho = {'0'  : "Machine Restistation successful", 
+               '1'  : "Machine Registeded Allready", 
+               '2'  : "Key-user pair mismatch", 
+               '3'  : "auhthentication fail", 
+               '4'  : "Unsuffecient credentials", 
+               '5'  : "Exeeding the installation limit6", 
+               '7'  : "Database exception occured", 
+               '8'  : "IO Exception", 
+               '9'  : "Unknow error"  }
+     
+    # get default serial
+    if ret == '0' :
+        try:
+            fd = open(ZFS_SERIAL,"w")
+            fd.write(zfs_config['key'])
+            fd.close()
+        except:
+            print "Unable to save credentials (product key)"
+            print "Please put you product key %s to file %s manually for future use" % (zfs_config['key'],ZFS_SERIAL)
+                   
+    if retEcho.get(ret) == None:
+        print "Got unknown response"
         return -1
-    sys.exit(0)
+    else:
+        print "Got Response : " + retEcho[ret]
+
+    return
+#    sys.exit(0)
  
 
 
@@ -298,4 +338,4 @@ def main():
 if __name__ == '__main__':
 
     main()
-    sys.exit(0)
+#    sys.exit(0)
