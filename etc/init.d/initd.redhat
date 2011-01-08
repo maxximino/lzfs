@@ -66,10 +66,10 @@ start () {
 	RETVAL=$?
         if [ $RETVAL -eq 0 ]
         then
-                echo -n "loading modules . . ."
+                echo -n "loading zfs modules "
                 echo_success
         else
-                echo -n "unable load modules"
+                echo -n "failed load zfs modules"
                 echo_failure
         fi
         echo
@@ -85,15 +85,14 @@ stop () {
 	modprobe -r znvpair
 	modprobe -r zavl
 	modprobe -r spl
-        #killproc $prog
         RETVAL=$?
         
 	if [ $RETVAL -eq 0 ]
         then
-                echo -n "unloading modules . . ."
+                echo -n "unloading zfs modules "
                 echo_success
         else
-                echo -n "unable to unload modules"
+                echo -n "failed to unload zfs modules"
                 echo_failure
         fi
 	echo
@@ -132,9 +131,14 @@ case $1 in
                 fi
                 echo
         ;;
-status)
-                status $prog
-                RETVAL=$?
+	status)
+		status=`lsmod | grep lzfs | cut -d ' ' -f1 | head -n 1 2>  /dev/null`
+                if [ "$status" = "lzfs" ]
+                then
+                        echo "* zfs service is running"
+                else
+                        echo "* zfs service is stopped"
+                fi
         ;;
         restartlog)
                 stop

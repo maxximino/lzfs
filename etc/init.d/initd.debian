@@ -25,23 +25,23 @@ lockfile=/var/lock/subsys/$prog
 
 RES_COL=60
 # Command to move out to the configured column number
-MOVE_TO_COL="echo -en \\033[${RES_COL}G"
+MOVE_TO_COL="echo -n \\033[${RES_COL}G"
 # Command to set the color to SUCCESS (Green)
-SETCOLOR_SUCCESS="echo -en \\033[1;32m"
+SETCOLOR_SUCCESS="echo -n \\033[1;32m"
 # Command to set the color to FAILED (Red)
-SETCOLOR_FAILURE="echo -en \\033[1;31m"
+SETCOLOR_FAILURE="echo -n \\033[1;31m"
 # Command to set the color back to normal
-SETCOLOR_NORMAL="echo -en \\033[0;39m"
+SETCOLOR_NORMAL="echo -n \\033[0;39m"
 
 # Function to print the SUCCESS status
 echo_success() {
         $MOVE_TO_COL
         echo -n "["
         $SETCOLOR_SUCCESS
-        echo -n $"  OK  "
+        echo -n "  OK  "
         $SETCOLOR_NORMAL
         echo -n "]"
-        echo -ne "\r"
+        echo -n "\r"
         return 0
 }
 
@@ -51,10 +51,10 @@ echo_failure() {
         $MOVE_TO_COL
         echo -n "["
         $SETCOLOR_FAILURE
-        echo -n $"FAILED"
+        echo -n "FAILED"
         $SETCOLOR_NORMAL
         echo -n "]"
-        echo -ne "\r"
+        echo -n "\r"
         return 1
 }
 
@@ -65,10 +65,10 @@ start () {
 	RETVAL=$?
         if [ $RETVAL -eq 0 ]
         then
-                echo -n "loading modules . . ."
+                echo -n "loading zfs modules "
                 echo_success
         else
-                echo -n "unable load modules"
+                echo -n "failed load zfs modules"
                 echo_failure
         fi
         echo
@@ -88,10 +88,10 @@ stop () {
 	RETVAL=$?
 	if [ $RETVAL -eq 0 ]
         then
-                echo -n "unloading modules . . ."
+                echo -n "unloading zfs modules "
                 echo_success
         else
-                echo -n "unable to unload modules"
+                echo -n "failed to unload zfs modules"
                 echo_failure
         fi
         echo
@@ -130,9 +130,14 @@ case $1 in
                 fi
                 echo
         ;;
-status)
-                status $prog
-                RETVAL=$?
+	status)
+		status=`lsmod | grep lzfs | cut -d ' ' -f1 | head -n 1 2>  /dev/null`
+                if [ "$status" = "lzfs" ]
+                then
+                        echo "* zfs service is running"
+                else
+                        echo "* zfs service is stopped"
+                fi
         ;;
         restartlog)
                 stop
