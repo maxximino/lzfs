@@ -1,0 +1,5 @@
+2010-01-10 KQ Infotech <zfs@kqinfotech.com>
+  - Downoad the source code from https://github.com/zfs-linux/lzfs.
+  - Look at the META for the commit id
+  - Do a checkout for that commit id. "git checkout <commit id>"
+  - Use the git commit logs for a full records of changes: 'git log'

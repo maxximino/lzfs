@@ -1,13 +1,13 @@
 Source: lzfs
-Section: unknown
+Section: kernel
 Priority: extra
 Maintainer: kqinfo <zfs@kqinfotech.com>
 Build-Depends: debhelper (>= 7), autotools-dev
 Standards-Version: 3.8.3
-Homepage: <insert the upstream URL, if relevant>
+Homepage: http://kqstor.com
 
 Package: lzfs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, spl, zfs
-Description: <insert up to 60 chars description>
- <insert long description, indented with spaces>
+Description: The package contains POSIX porting layer to zfs file system.
+
