@@ -1077,7 +1077,7 @@ int lzfs_file_mmap(struct file * file, struct vm_area_struct * vma)
 	return rc;
 }
 
-static ssize_t
+ssize_t
 lzfs_vnop_aio_read(struct kiocb *iocb, const struct iovec *iov,
                 unsigned long nr_segs, loff_t pos)
 {
@@ -1166,7 +1166,7 @@ out:
 	return written ? written : err;
 }
 
-static ssize_t
+ssize_t
 lzfs_vnop_aio_write(struct kiocb *iocb, const struct iovec *iov,
                 unsigned long nr_segs, loff_t pos)
 {
@@ -1210,8 +1210,8 @@ const struct file_operations zfs_file_operations = {
 	.mmap               = lzfs_file_mmap,
     //.unlocked_ioctl   = lzfs_fop_ioctl,
 	.fsync              = lzfs_vnop_fsync,
-	.aio_read           = lzfs_vnop_aio_read,
-	.aio_write          = lzfs_vnop_aio_write,
+//	.aio_read           = lzfs_vnop_aio_read,
+//	.aio_write          = lzfs_vnop_aio_write,
 };
 
 const struct inode_operations zfs_dir_inode_operations ={
