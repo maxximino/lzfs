@@ -7,7 +7,7 @@ KERNEL_DIR = module
 SUBDIRS = $(KERNEL_DIR) $(USER_DIR)
 
 AUTOMAKE_OPTIONS = foreign dist-zip
-EXTRA_DIST  = autogen.sh lzfs.spec.in META ChangeLog
+EXTRA_DIST  = autogen.sh lzfs.spec.in META ChangeLog COPYING
 EXTRA_DIST += config/rpm.am config/deb.am config/tgz.am
 noinst_HEADERS = lzfs_config.h 
 

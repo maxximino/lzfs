@@ -201,7 +201,7 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-, root, root)
 /lib/modules/*
-%doc META ChangeLog
+%doc META ChangeLog COPYING
 %{_prefix}/src/* 
 %attr(0755,root,root) %{_sysconfdir}/init.d/zfsload
 /usr/sbin/zfs_manage.py

@@ -42,7 +42,7 @@ DIST_COMMON = $(am__configure_deps) $(noinst_HEADERS) \
 	$(top_srcdir)/etc/Makefile.in \
 	$(top_srcdir)/include/Makefile.in \
 	$(top_srcdir)/module/Makefile.in $(top_srcdir)/usr/Makefile.in \
-	ChangeLog config/config.guess config/config.sub \
+	COPYING ChangeLog config/config.guess config/config.sub \
 	config/install-sh config/ltmain.sh config/missing install-sh \
 	ltmain.sh
 subdir = .
@@ -254,8 +254,8 @@ USER_DIR = etc include usr
 KERNEL_DIR = module
 SUBDIRS = $(KERNEL_DIR) $(USER_DIR)
 AUTOMAKE_OPTIONS = foreign dist-zip
-EXTRA_DIST = autogen.sh lzfs.spec.in META ChangeLog config/rpm.am \
-	config/deb.am config/tgz.am
+EXTRA_DIST = autogen.sh lzfs.spec.in META ChangeLog COPYING \
+	config/rpm.am config/deb.am config/tgz.am
 noinst_HEADERS = lzfs_config.h 
 all: lzfs_config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
