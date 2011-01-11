@@ -219,6 +219,9 @@ fi
 service zfsload start
 
 %postun
+/usr/local/sbin/zfs umount -a
+/sbin/modprobe -r lzfs
+
 if [ -f /boot/System.map-%{kver} ]; then
 	depmod -ae -F /boot/System.map-%{kver} %{kver} || exit 0
 else
