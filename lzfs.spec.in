@@ -224,6 +224,4 @@ if [ -f /boot/System.map-%{kver} ]; then
 else
 	depmod -ae %{kver} || exit 0
 fi
-service zfsload stop
-/sbin/chkconfig --del  zfsload
 
