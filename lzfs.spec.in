@@ -216,12 +216,12 @@ else
 	depmod -ae %{kver} || exit 0
 fi
 /sbin/chkconfig --add  zfsload
-service zfsload start
+/sbin/service zfsload start
+
+%preun
+/sbin/service zfsload stop
 
 %postun
-/usr/local/sbin/zfs umount -a
-/sbin/modprobe -r lzfs
-
 if [ -f /boot/System.map-%{kver} ]; then
 	depmod -ae -F /boot/System.map-%{kver} %{kver} || exit 0
 else
