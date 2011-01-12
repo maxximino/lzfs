@@ -8,6 +8,6 @@ Homepage: http://kqstor.com
 
 Package: lzfs
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, spl, zfs
+Depends: ${shlibs:Depends}, ${misc:Depends}, spl, zfs, python-dmidecode, python-soappy, python-libxml2
 Description: The package contains POSIX porting layer to zfs file system.
 
