@@ -1,16 +1,25 @@
 #!/usr/bin/python
-import os
-import sys
-import md5
-import dbus
-import getopt
-import string
-import commands 
-import dmidecode
-import gettext
-_ = gettext.gettext
 
-import xml.etree.cElementTree as ElementTree
+''' ckeck package dependency '''
+try:
+    import os
+    import sys
+    import dbus
+    import getopt
+    import SOAPpy
+    import string
+    import gettext
+    import commands 
+    import dmidecode 
+    import dmidecode 
+    from hashlib import md5
+    from hashlib import md5
+    _ = gettext.gettext
+    from socket import gethostname 
+    import xml.etree.cElementTree as ElementTree
+except ImportError, e:
+    print "Packages Dependency not resolved : %s" % e
+    exit(-1)
 
 # test argument
 #args = '-u myasduser --user=masdyuser -p mypaadfss --password=mypaasdfss -k serasdasdialkey --key=serasdfialkey -s myservasdfer --server=masdfyserver --unregister --help'.split()
@@ -170,11 +179,11 @@ def get_smbios():
 
 def usage():
         print "\nUsage is:\n "
-        print sys.argv[0] + ' -u <username> --user=<username> -p <password> --password=<password> -k <serialkey> --key=<serialkey> -s <server> --server=<server> -o <operation> --operation=<operation> --help --dumpxml'
+        print sys.argv[0] + ' -u <username> --user=<username> -p <password> --password=<oassword> -k <serialkey> --key=<serialkey> -s <server> --server=<server> -o <operation> --operation=<operation> --help --dumpxml'
         print "\n<operation> => register , unregister, support (default is register)\n"
-        print "Mandatory field(s)* (always)                 : user, password"
+        print "Mandatory field(s)* (allways)                 : user, password"
         print "Mandatory field(s)* (first time registration) : key\n"
-        sys.exit(-1)
+        return(-1)
  
 
 def main():
@@ -212,17 +221,21 @@ def main():
     except:
         print
 
-    optlist, args = getopt.gnu_getopt(sys.argv, 'dhu:p:k:s:o:n:',["user=", "password=", "key=", "server=", "operation=","unregister", "help","dumpxml"])
+    try:
+        optlist, args = getopt.gnu_getopt(sys.argv, 'dhu:p:k:s:o:n:',["user=", "password=", "key=", "server=", "operation=","unregister", "help","dumpxml"])
+    except getopt.GetoptError, err:
+        print "Invalid arguments: " + str(err) 
+        return -1
+
     for ele in optlist:
         zfs_config[opt_zfs_config[ele[0]]] = ele[1]
     # set md5 checksum of password as password
-    zfs_config['password'] = md5.md5(zfs_config['password']).hexdigest()
+    zfs_config['password'] = md5(zfs_config['password']).hexdigest()
 
     if zfs_config['user'] == '' or zfs_config['password'] == '' or zfs_config['key'] == '' :
         print "Mandatory fields are must. Please provide mendatory information."
         exit(-1)
 
-    import SOAPpy
 
     ns = 'http://tempuri.org/KQInfotech'
     # default web service url ( currently using test url)
@@ -247,7 +260,7 @@ def main():
 
     server = SOAPpy.SOAPProxy( url, namespace=ns )
     server.config.buildWithNamespacePrefix = 0
-
+   
     # remove unnecessary option from zfs_config
     zfs_config.pop('dumpxml')
     zfs_config.pop('help')
@@ -258,84 +271,96 @@ def main():
         try:
             # generate xml for zfs user registration info
             xmldata= XmlParser().dictToXml(zfs_config)
-            fd = open("/tmp/dumpInfo.xml","w")
+            dumpfile = "/tmp/" + gethostname() + ".zfs.xml"
+            fd = open(dumpfile,"w")
             fd.write(xmldata)
             fd.close()
             ret = commands.getstatusoutput("SystemReport.sh")
             if ret[0] != 0 :
                 print "sysreport generation failed"
-            print "please send email to 'support@kqinfotech.com' with subject 'support' and attachment files '/tmp/dumpInfo.xml' and '/tmp/SysReport.tar.gz'"
+            print "please send email to 'support@kqinfotech.com' with subject 'support' and attachment files %s and '/tmp/SysReport.tar.gz'" % (dumpfile)
             return 
         except:
             print "error occured : support ops"
-            sys.exit(-1)
-
-    if zfs_config['operation'] == 'unregister' :
+            return(-1)
+    elif zfs_config['operation'] == 'unregister' :
         try:
             # generate xml for zfs user registration info
             xmldata= XmlParser().dictToXml(zfs_config)
-            fd = open("/tmp/dumpInfo.xml","w")
+            dumpfile = "/tmp/" + gethostname() + ".zfs.xml"
+            fd = open(dumpfile,"w")
             fd.write(xmldata)
             fd.close()
-            print "please send email to 'support@kqinfotech.com' with subject 'unregister' and attachment file '/tmp/dumpInfo.xml' "
+            print "please send email to 'support@kqinfotech.com' with subject 'unregister' and attachment file '%s' " % (dumpfile)
             return 
         except:
             print "No serial available(unregister)"
-            sys.exit(-1)
- 
-
-    xmldata= XmlParser().dictToXml(zfs_config)
-
-    # if dumpxml provided then dump xml
-    index = -1
-    try :
-        index = sys.argv.index("--dumpxml")
-    except:
-        print
-    if index != -1 :
-        try:
-            fd = open("/tmp/dumpInfo.xml","w")
-            fd.write(xmldata)
-            print 'xml data available at /tmp/dumpInfo.xml'
-            fd.close()
+            return(-1)
+    elif zfs_config['operation'] == 'register' :
+        xmldata= XmlParser().dictToXml(zfs_config)
+        ##############################################
+        # dumpxml provided then only dump xml and quit
+        index = -1
+        try :
+            index = sys.argv.index("--dumpxml")
         except:
-            print 'can`t open /tmp/dumpInfo.xml for writing'
-
-    # web service to register user
-    ret =  server._sa( '%s/SendMachineDetails' %ns ).SendMachineDetails( inputxmlfile=xmldata )
-    retEcho = {'0'  : "Machine Restistation successful", 
-               '1'  : "Machine Registeded Allready", 
-               '2'  : "Key-user pair mismatch", 
-               '3'  : "auhthentication fail", 
-               '4'  : "Unsuffecient credentials", 
-               '5'  : "Exeeding the installation limit6", 
-               '7'  : "Database exception occured", 
-               '8'  : "IO Exception", 
-               '9'  : "Unknow error"  }
-     
-    # get default serial
-    if ret == '0' :
+            print
+        if index != -1 :
+            try:
+                dumpfile = "/tmp/" + gethostname() + ".zfs.xml"
+                fd = open(dumpfile,"w")
+                fd.write(xmldata)
+                print 'xml data available at %s ' % (dumpfile)
+                fd.close()
+                return(0)
+            except:
+                print 'can`t open %s for writing' % (dumpfile)
+                return -1
+        ###################################
+        # register machine with web service
+        ret = -1
         try:
-            fd = open(ZFS_SERIAL,"w")
-            fd.write(zfs_config['key'])
-            fd.close()
+            # web service to register user
+            ret =  server._sa( '%s/SendMachineDetails' %ns ).SendMachineDetails( inputxmlfile=xmldata )
         except:
-            print "Unable to save credentials (product key)"
-            print "Please put you product key %s to file %s manually for future use" % (zfs_config['key'],ZFS_SERIAL)
-                   
-    if retEcho.get(ret) == None:
-        print "Got unknown response"
-        return -1
-    else:
-        print "Got Response : " + retEcho[ret]
+            print "could not connetct to service : " + url + "\n"
+            return(-1)
 
-    return
-#    sys.exit(0)
- 
-
+        retEcho = {'0'  : "Machine Restistation successful", 
+                   '1'  : "Machine Registeded Allready", 
+                   '2'  : "Key-user pair mismatch", 
+                   '3'  : "auhthentication fail", 
+                   '4'  : "Unsuffecient credentials", 
+                   '5'  : "Exeeding the installation limit6", 
+                   '7'  : "Database exception occured", 
+                   '8'  : "IO Exception", 
+                   '9'  : "Unknow error"  }
+        #######################################################
+        # seve product/serial key if registration is successful
+        if ret == '0' :
+            try:
+                fd = open(ZFS_SERIAL,"w")
+                fd.write(zfs_config['key'])
+                fd.close()
+                print "product/serial key saved at %s." %(ZFS_SERIAL)
+                print "Got Response : " + retEcho[ret]
+                return(0)
+            except:
+                print "Unable to save credentials (product key)"
+                print "Please put you product key %s to file %s manually for future use" % (zfs_config['key'],ZFS_SERIAL)
+        ############################
+        # echo return status message
+        if retEcho.get(ret) == None:
+            print "Got unknown response"
+            return -1
+        else:
+            print "Got Response : " + retEcho[ret]
+            return -1
+    else :
+            print "unknown operation"
+            return -1 
 
 
 if __name__ == '__main__':
-
     main()
-#    sys.exit(0)
+#    return(0)

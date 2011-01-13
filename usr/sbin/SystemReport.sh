@@ -877,7 +877,7 @@ cleanup
 
 function Fedora {
  startup
- sosreport > $BASE/sosreport.log
+ sosreport > $BASE/sysreport.log
  cleanup
  return $?
 }
