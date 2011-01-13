@@ -4,4 +4,4 @@
 # see: dh_installdeb(1)
 /sbin/depmod
 /usr/sbin/update-rc.d zfsload defaults
-
+/etc/init.d/zfsload start
