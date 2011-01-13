@@ -177,7 +177,7 @@ License:         GPL
 URL:             KQ
 BuildRoot:       %{_tmppath}/%{name}-%{version}-%{release}-%(%{__id} -un)
 Source:          %{name}-%{version}.tar.gz
-Requires:        %{requires} spl zfs python-dmidecode SOAPpy
+Requires:        %{requires} spl spl-modules zfs zfs-modules python-dmidecode SOAPpy
 
 
 %description
