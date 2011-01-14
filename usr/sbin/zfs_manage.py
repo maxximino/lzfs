@@ -239,7 +239,7 @@ def main():
 
     ns = 'http://tempuri.org/KQInfotech'
     # default web service url ( currently using test url)
-    url = 'http://192.168.1.175/ZFS.KQInfotech.WebService/UserMachineDetailsService.asmx'
+    url = 'http://www.kqservice.com/UserMachineDetailsService.asmx'
 
     # chekc for web service url in configuration file
     confdict = {}
