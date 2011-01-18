@@ -1226,6 +1226,10 @@ const struct inode_operations zfs_dir_inode_operations ={
 	.rename         = lzfs_vnop_rename,
 	.setattr        = lzfs_vnop_setattr,
 	.permission     = lzfs_vnop_permission,
+	.setxattr       = generic_setxattr,
+	.getxattr       = generic_getxattr,
+	.listxattr      = lzfs_listxattr,
+	.removexattr    = lzfs_removexattr,
 };
 
 const struct file_operations zfs_dir_file_operations = {
