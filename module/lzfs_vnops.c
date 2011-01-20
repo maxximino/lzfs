@@ -1237,7 +1237,7 @@ const struct file_operations zfs_dir_file_operations = {
 //	.read           = generic_read_dir,
 	.readdir        = lzfs_vnop_readdir,
 //     .unlocked_ioctl = lzfs_fop_ioctl,
-//	.fsync          = simple_fsync,
+	.fsync          = lzfs_vnop_fsync,
 
 };
 
