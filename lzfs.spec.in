@@ -147,7 +147,7 @@
 %define name             @PACKAGE@
 %define version          @VERSION@
 %if %{defined build_src_rpm}
-%define release 	 1
+%define release 	 2
 %define requires         %{kpkg}
 %define devel_requires   %{kdevpkg}
 %else
