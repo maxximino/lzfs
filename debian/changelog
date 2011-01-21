@@ -1,4 +1,4 @@
-lzfs (1.0) unstable; urgency=low
+lzfs (1.0-2) unstable; urgency=low
 
   * Downoad the source code from https://github.com/zfs-linux/lzfs.
   * Look at the META for the commit id
