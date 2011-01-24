@@ -534,12 +534,6 @@ lzfs_vnop_setattr(struct dentry *dentry, struct iattr *iattr)
 	return 0;
 }
 
-int
-lzfs_vnop_permission(struct inode *inode, int mask)
-{
-	return generic_permission(inode, mask, NULL);
-}
-
 static void lzfs_put_link(struct dentry *dentry, struct nameidata *nd, void *ptr)
 {
     char *buf = nd_get_link(nd);
@@ -1194,7 +1188,6 @@ const struct inode_operations zfs_inode_operations = {
 	.mknod          = lzfs_vnop_mknod,
 	.rename         = lzfs_vnop_rename,
 	.setattr        = lzfs_vnop_setattr,
-	.permission     = lzfs_vnop_permission,
 	.check_acl      = lzfs_check_acl,
 	.setxattr       = generic_setxattr,
 	.getxattr       = generic_getxattr,
@@ -1226,7 +1219,6 @@ const struct inode_operations zfs_dir_inode_operations ={
 	.mknod          = lzfs_vnop_mknod,
 	.rename         = lzfs_vnop_rename,
 	.setattr        = lzfs_vnop_setattr,
-	.permission     = lzfs_vnop_permission,
 	.check_acl      = lzfs_check_acl,
 	.setxattr       = generic_setxattr,
 	.getxattr       = generic_getxattr,
