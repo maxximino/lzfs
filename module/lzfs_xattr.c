@@ -241,9 +241,9 @@ const struct xattr_handler *lzfs_xattr_handlers[] = {
 	&lzfs_xattr_user_handler,
 #ifdef HAVE_ZPL	
 	&lzfs_xattr_trusted_handler,	// TODO
-	&lzfs_xattr_acl_access_handler,	// TODO
-	&lzfs_xattr_acl_default_handler,// TODO	
 #endif /* HAVE_ZPL */
+	&lzfs_xattr_acl_access_handler,
+	&lzfs_xattr_acl_default_handler,
 	&lzfs_xattr_security_handler,
         NULL
 };

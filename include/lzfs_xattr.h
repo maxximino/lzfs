@@ -12,7 +12,8 @@ ssize_t
 lzfs_listxattr(struct dentry *dentry, char *buffer, size_t size);
 
 extern struct xattr_handler lzfs_xattr_user_handler;
-
+extern struct xattr_handler lzfs_xattr_acl_access_handler;
+extern struct xattr_handler lzfs_xattr_acl_default_handler;
 extern struct xattr_handler lzfs_xattr_security_handler;
 
 int
