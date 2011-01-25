@@ -24,5 +24,15 @@ lzfs_removexattr(struct dentry *dentry, const char *name);
 
 int
 lzfs_init_security(struct dentry *dentry, struct inode *dir);
+
+int
+lzfs_vnop_setattr(struct dentry *dentry, struct iattr *iattr);
+int
+lzfs_check_acl(struct inode *inode, int mask);
+int
+lzfs_acl_chmod(struct inode *inode);
+int
+lzfs_acl_init(struct inode *inode, struct inode *dir);
+
 #endif /* _LZFS_XATTR_H */
 
