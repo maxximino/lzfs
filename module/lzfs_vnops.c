@@ -1030,7 +1030,7 @@ no_cached_page:
 
 /* 
  * fops->open is not needed for default operations, but in case mmap is 
- * called on an opened file we need strcut file *, save it in vnode_t
+ * called on an opened file we need struct file *, save it in vnode_t
  * */
 static int lzfs_vnop_open(struct inode *inode, struct file *file)
 {
