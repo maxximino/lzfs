@@ -531,6 +531,9 @@ lzfs_vnop_setattr(struct dentry *dentry, struct iattr *iattr)
 
 	err = zfs_setattr(vp, vap, 0, (struct cred *)cred, NULL);
 	kfree(vap);
+	if(mask & ATTR_MODE){
+	   lzfs_acl_chmod(inode);
+	}
 	put_cred(cred);
 	tsd_exit();
 	SEXIT;
