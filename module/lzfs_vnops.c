@@ -431,6 +431,7 @@ lzfs_vnop_mknod(struct inode * dir, struct dentry *dentry, int mode,
 		return PTR_ERR(ERR_PTR(-err));
 	}
 	d_instantiate(dentry, LZFS_VTOI(vp));
+	init_special_inode(dentry->d_inode,mode,rdev);
 	se_err = lzfs_init_security(dentry, dir);
 	lzfs_acl_init(dentry->d_inode,dir);
 	if(se_err) {
