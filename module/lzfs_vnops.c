@@ -128,6 +128,7 @@ lzfs_vnop_create(struct inode *dir, struct dentry *dentry, int mode,
 	}
 	d_instantiate(dentry, LZFS_VTOI(vp));
 	se_err = lzfs_init_security(dentry, dir);
+	lzfs_acl_init(dentry->d_inode,dir);
 	if(se_err) {
 		tsd_exit();
 		SEXIT;
@@ -309,6 +310,7 @@ lzfs_vnop_symlink (struct inode *dir, struct dentry *dentry,
 	}
 	d_instantiate(dentry, LZFS_VTOI(vp));
 	se_err = lzfs_init_security(dentry, dir);
+	lzfs_acl_init(dentry->d_inode,dir);
 	if(se_err) {
  		tsd_exit();
 		SEXIT;
@@ -352,6 +354,7 @@ lzfs_vnop_mkdir(struct inode *dir, struct dentry *dentry, int mode)
 	}
 	d_instantiate(dentry, LZFS_VTOI(vp));
 	se_err = lzfs_init_security(dentry, dir);
+	lzfs_acl_init(dentry->d_inode,dir);
 	if(se_err) {
 		tsd_exit();
 		SEXIT;
@@ -429,6 +432,7 @@ lzfs_vnop_mknod(struct inode * dir, struct dentry *dentry, int mode,
 	}
 	d_instantiate(dentry, LZFS_VTOI(vp));
 	se_err = lzfs_init_security(dentry, dir);
+	lzfs_acl_init(dentry->d_inode,dir);
 	if(se_err) {
 		tsd_exit();
 		SEXIT;
