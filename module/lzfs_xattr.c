@@ -60,6 +60,9 @@ lzfs_xattr_get(struct inode *inode, const char *name,
 	(struct cred *) cred, NULL, NULL, NULL);
 	kfree(xattr_name);
 	if(err) {
+		if(err == ENOENT) {
+		    return -ENODATA;
+		}
 		return -err;
 	}
 	xinode = LZFS_VTOI(xvp);
