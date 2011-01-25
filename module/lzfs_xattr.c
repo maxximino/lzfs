@@ -52,6 +52,10 @@ lzfs_xattr_get(struct inode *inode, const char *name,
 		xattr_name = strncpy(xattr_name, "security.", 9);
 		xattr_name = strncat(xattr_name, name, strlen(name));
 	}
+	else if(index==2){
+		xattr_name = kzalloc(strlen(name), GFP_KERNEL);
+		xattr_name = strncpy(xattr_name, name,strlen(name));
+	}
 	err = zfs_lookup(vp, (char *) xattr_name, &xvp, NULL, 0, NULL,
 	(struct cred *) cred, NULL, NULL, NULL);
 	kfree(xattr_name);
