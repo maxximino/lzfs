@@ -19,8 +19,64 @@
 #define SS_DEBUG_SUBSYS SS_USER2
 
 int
+lzfs_xattr_set(struct inode *inode, const char *name,
+                    void *buffer, size_t size, const char *xattr_name)
+{
+    vnode_t *vp;
+    vnode_t *dvp;
+    vnode_t *xvp;
+    vattr_t *vap;
+    int err = 0;
+    const struct cred *cred = get_current_cred();
+    struct iovec iov = {
+        .iov_base = buffer,
+        .iov_len  = size,
+    };
+
+    uio_t uio = {
+        .uio_iov     = &iov,
+        .uio_resid   = size,
+        .uio_iovcnt  = 1,
+        .uio_loffset = (offset_t)0,
+        .uio_limit   = MAXOFFSET_T,
+        .uio_segflg  = UIO_SYSSPACE,
+    };
+
+	dvp = LZFS_ITOV(inode);
+
+    err = zfs_lookup(dvp, NULL, &vp, NULL, LOOKUP_XATTR | CREATE_XATTR_DIR,
+             NULL, (struct cred *) cred, NULL, NULL, NULL);
+    if(err)
+        return -err;
+
+    if(!buffer) {
+        err = zfs_remove(vp, (char *)name, (struct cred *)cred, NULL, 0);
+        return -err;
+    }
+
+    vap = kmalloc(sizeof(vattr_t), GFP_KERNEL);
+    ASSERT(vap != NULL);
+    memset(vap, 0, sizeof(vap));
+    vap->va_type = VREG;
+    vap->va_mode = 0644;
+    vap->va_mask = AT_TYPE|AT_MODE;
+    vap->va_uid = current_fsuid();
+    vap->va_gid = current_fsgid();
+
+    err = zfs_create(vp, (char *) xattr_name, vap, 0, 0644,
+            &xvp, (struct cred *)cred, 0, NULL, NULL);
+    kfree(vap);
+    if(err)
+        return -err;
+    err = zfs_write(xvp, &uio, 0, (cred_t *)cred, NULL);
+    put_cred(cred);
+
+	return (err ? -err : 0);
+}
+
+int
 lzfs_xattr_get(struct inode *inode, const char *name,
-                    void *buffer, size_t size, int index)
+                    void *buffer, size_t size, const char *xattr_name)
 {
 	struct inode *xinode = NULL;
 	vnode_t *vp;
@@ -30,7 +86,6 @@ lzfs_xattr_get(struct inode *inode, const char *name,
 	const struct cred *cred = get_current_cred();
 	struct iovec iov;
 	uio_t uio;
-	char *xattr_name = NULL;
 
 	dvp = LZFS_ITOV(inode);
 	err = zfs_lookup(dvp, NULL, &vp, NULL, LOOKUP_XATTR, NULL,
@@ -42,20 +97,13 @@ lzfs_xattr_get(struct inode *inode, const char *name,
             return -err;
         }
 	ASSERT(vp != NULL);
-	if(index == 0) {
-		xattr_name = kzalloc(strlen(name) + 6, GFP_KERNEL);
-		xattr_name = strncpy(xattr_name, "user.", 5);
-		xattr_name = strncat(xattr_name, name, strlen(name));
-	}
-	else if(index == 1) {
-		xattr_name = kzalloc(strlen(name) + 10, GFP_KERNEL);
-		xattr_name = strncpy(xattr_name, "security.", 9);
-		xattr_name = strncat(xattr_name, name, strlen(name));
-	}
 	err = zfs_lookup(vp, (char *) xattr_name, &xvp, NULL, 0, NULL,
 	(struct cred *) cred, NULL, NULL, NULL);
 	kfree(xattr_name);
 	if(err) {
+		if(err == ENOENT) {
+		    return -ENODATA;
+		}
 		return -err;
 	}
 	xinode = LZFS_VTOI(xvp);
@@ -241,9 +289,9 @@ const struct xattr_handler *lzfs_xattr_handlers[] = {
 	&lzfs_xattr_user_handler,
 #ifdef HAVE_ZPL	
 	&lzfs_xattr_trusted_handler,	// TODO
-	&lzfs_xattr_acl_access_handler,	// TODO
-	&lzfs_xattr_acl_default_handler,// TODO	
 #endif /* HAVE_ZPL */
+	&lzfs_xattr_acl_access_handler,
+	&lzfs_xattr_acl_default_handler,
 	&lzfs_xattr_security_handler,
         NULL
 };
