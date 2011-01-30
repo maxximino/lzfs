@@ -98,7 +98,7 @@ lzfs_vnop_create(struct inode *dir, struct dentry *dentry, int mode,
 	vattr_t *vap;
 	const struct cred *cred = get_current_cred();
 
-	int err, se_err;
+	int err;
 
 	SENTRY;
 	err = checkname((char *)dentry->d_name.name);
@@ -122,20 +122,19 @@ lzfs_vnop_create(struct inode *dir, struct dentry *dentry, int mode,
 	put_cred(cred);
 	kfree(vap);
 	if (err) {
-		tsd_exit();
-		SEXIT;
-		return PTR_ERR(ERR_PTR(-err));
+		err = -err;
+		goto failed;
 	}
 	d_instantiate(dentry, LZFS_VTOI(vp));
-	se_err = lzfs_init_security(dentry, dir);
-	if(se_err) {
-		tsd_exit();
-		SEXIT;
-		return se_err;
+	if ((err = lzfs_acl_init(dentry->d_inode, dir))) {
+		/* XXX need more error handling  */
+		goto failed;
 	}
+	err = lzfs_init_security(dentry, dir);
+failed:
 	tsd_exit();
 	SEXIT;
-	return 0;
+	return err;
 }
 
 /* Read the directory. It uses the filldir function provided by Linux kernel.
@@ -281,7 +280,7 @@ lzfs_vnop_symlink (struct inode *dir, struct dentry *dentry,
 	vnode_t *vp;
 	vattr_t *vap;
 	const struct cred *cred = get_current_cred();
-	int err, se_err;
+	int err;
 	SENTRY;
 	err = checkname((char *)dentry->d_name.name);
 	if(err)
@@ -303,20 +302,20 @@ lzfs_vnop_symlink (struct inode *dir, struct dentry *dentry,
 	kfree(vap);
 	put_cred(cred);
 	if (err) {
-		tsd_exit();
-		SEXIT;
-		return PTR_ERR(ERR_PTR(-err));
+		err = -err;
+		goto failed;
 	}
 	d_instantiate(dentry, LZFS_VTOI(vp));
-	se_err = lzfs_init_security(dentry, dir);
-	if(se_err) {
- 		tsd_exit();
-		SEXIT;
-		return se_err;
+	err = lzfs_acl_init(dentry->d_inode, dir);
+	if(err) {
+		/* XXX error handling */
+		goto failed;
 	}
+	err = lzfs_init_security(dentry, dir);
+failed:
 	tsd_exit();
 	SEXIT;
-	return 0;
+	return err;
 }
 
 static int
@@ -326,7 +325,7 @@ lzfs_vnop_mkdir(struct inode *dir, struct dentry *dentry, int mode)
 	vnode_t *dvp;
 	vattr_t *vap;
 	const struct cred *cred = get_current_cred();
-	int err, se_err;
+	int err;
 	SENTRY;
 	err = checkname((char *)dentry->d_name.name);
 	if(err)
@@ -346,21 +345,20 @@ lzfs_vnop_mkdir(struct inode *dir, struct dentry *dentry, int mode)
 	kfree(vap);
 	put_cred(cred);
 	if (err) {
-		tsd_exit();
-		SEXIT;
-		return PTR_ERR(ERR_PTR(-err));
+		err = -err;
+		goto failed;
 	}
 	d_instantiate(dentry, LZFS_VTOI(vp));
-	se_err = lzfs_init_security(dentry, dir);
-	if(se_err) {
-		tsd_exit();
-		SEXIT;
-		return se_err;
+	err = lzfs_acl_init(dentry->d_inode,dir);
+	if(err) {
+		/* XXX error handling */
+		goto failed;
 	}
-
+	err = lzfs_init_security(dentry, dir);
+failed:
 	tsd_exit();
 	SEXIT;
-	return 0;
+	return err;
 }
 
 static int
@@ -397,7 +395,7 @@ lzfs_vnop_mknod(struct inode * dir, struct dentry *dentry, int mode,
 	vattr_t *vap;
 	const struct cred *cred = get_current_cred();
 
-	int err, se_err;
+	int err;
 	SENTRY;
 	vap = kmalloc(sizeof(vattr_t), GFP_KERNEL);
 	ASSERT(vap != NULL);
@@ -423,21 +421,22 @@ lzfs_vnop_mknod(struct inode * dir, struct dentry *dentry, int mode,
 	put_cred(cred);
 	kfree(vap);
 	if (err) {
-		tsd_exit();
-		SEXIT;
-		return PTR_ERR(ERR_PTR(-err));
+		err = -err;
+		goto failed;
 	}
 	d_instantiate(dentry, LZFS_VTOI(vp));
-	se_err = lzfs_init_security(dentry, dir);
-	if(se_err) {
-		tsd_exit();
-		SEXIT;
-		return se_err;
+	init_special_inode(dentry->d_inode,mode,rdev);
+	err = lzfs_acl_init(dentry->d_inode,dir);
+	if(err) {
+		/* XXX error handling */
+		goto failed;
 	}
+	err = lzfs_init_security(dentry, dir);
 
+failed:
 	tsd_exit();
 	SEXIT;
-	return 0;
+	return err;
 }
 
 static int
@@ -526,6 +525,9 @@ lzfs_vnop_setattr(struct dentry *dentry, struct iattr *iattr)
 
 	err = zfs_setattr(vp, vap, 0, (struct cred *)cred, NULL);
 	kfree(vap);
+	if(mask & ATTR_MODE){
+	   lzfs_acl_chmod(inode);
+	}
 	put_cred(cred);
 	tsd_exit();
 	SEXIT;
@@ -534,11 +536,14 @@ lzfs_vnop_setattr(struct dentry *dentry, struct iattr *iattr)
 	return 0;
 }
 
+#if 0
 int
 lzfs_vnop_permission(struct inode *inode, int mask)
 {
 	return generic_permission(inode, mask, NULL);
 }
+
+#endif
 
 static void lzfs_put_link(struct dentry *dentry, struct nameidata *nd, void *ptr)
 {
@@ -1194,7 +1199,8 @@ const struct inode_operations zfs_inode_operations = {
 	.mknod          = lzfs_vnop_mknod,
 	.rename         = lzfs_vnop_rename,
 	.setattr        = lzfs_vnop_setattr,
-	.permission     = lzfs_vnop_permission,
+//	.permission     = lzfs_vnop_permission,
+	.check_acl      = lzfs_check_acl,
 	.setxattr       = generic_setxattr,
 	.getxattr       = generic_getxattr,
 	.listxattr      = lzfs_listxattr,
@@ -1225,7 +1231,8 @@ const struct inode_operations zfs_dir_inode_operations ={
 	.mknod          = lzfs_vnop_mknod,
 	.rename         = lzfs_vnop_rename,
 	.setattr        = lzfs_vnop_setattr,
-	.permission     = lzfs_vnop_permission,
+//	.permission     = lzfs_vnop_permission,
+	.check_acl      = lzfs_check_acl,
 	.setxattr       = generic_setxattr,
 	.getxattr       = generic_getxattr,
 	.listxattr      = lzfs_listxattr,
