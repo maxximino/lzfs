@@ -99,7 +99,6 @@ lzfs_xattr_get(struct inode *inode, const char *name,
 	ASSERT(vp != NULL);
 	err = zfs_lookup(vp, (char *) xattr_name, &xvp, NULL, 0, NULL,
 	(struct cred *) cred, NULL, NULL, NULL);
-	kfree(xattr_name);
 	if(err) {
 		if(err == ENOENT) {
 		    return -ENODATA;

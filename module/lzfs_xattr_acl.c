@@ -391,7 +391,7 @@ static inline int
 lzfs_xattr_acl_set_access(struct inode *inode, const char *name,
 		const void *buffer, size_t size, int flags)
 {
-	return __lzfs_xattr_acl_set(inode, name, buffer, size, flags, ACL_TYPE_ACCESS);
+	return __lzfs_xattr_acl_set(inode, name, buffer, size, ACL_TYPE_ACCESS, flags);
 }
 #endif
 
@@ -422,7 +422,7 @@ static inline int
 lzfs_xattr_acl_set_default(struct inode *inode, const char *name,
 		const void *buffer, size_t size, int flags)
 {
-	return __lzfs_xattr_acl_set(inode, name, buffer, size, flags, ACL_TYPE_DEFAULT);
+	return __lzfs_xattr_acl_set(inode, name, buffer, size, ACL_TYPE_DEFAULT, flags);
 }
 #endif
 
