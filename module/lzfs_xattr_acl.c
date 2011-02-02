@@ -94,9 +94,15 @@ lzfs_set_acl(struct inode *inode,struct posix_acl *acl, int type)
 	}
 
 	err = lzfs_xattr_set(inode, xattr_name, value, size, xattr_name);
-
-	if (!err)
-		set_cached_acl(inode, type, acl);
+	if(err==-ENOENT && !acl){err=0;}  //zfs_remove returns -ENOENT if asked to remove a non-existent xattr.
+	if (!err){
+		if(acl){
+			set_cached_acl(inode, type, acl);
+		}
+		else{
+			forget_cached_acl(inode,type);		//if this was a removal request, forget the cached acl!!
+		}
+	}
 //	posix_acl_release(acl);
 
 out:
